@@ -19,6 +19,7 @@ from urllib.request import Request as UrlRequest, urlopen
 import mysql.connector
 from mysql.connector import IntegrityError
 from flask import Flask, Response, g, redirect, render_template, request, session, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -79,9 +80,13 @@ app.config.update(
     LOCAL_ADMIN_USER=os.getenv("DGP_LOCAL_ADMIN_USER", "admin").strip() or "admin",
     LOCAL_ADMIN_PASSWORD=os.getenv("DGP_LOCAL_ADMIN_PASSWORD", "admin123").strip() or "admin123",
     DEV_RELOAD=os.getenv("DGP_DEV_RELOAD", "0").strip() == "1",
+    TRUST_PROXY=os.getenv("DGP_TRUST_PROXY", "1").strip() != "0",
+    SESSION_COOKIE_SECURE=os.getenv("DGP_SESSION_COOKIE_SECURE", "0").strip() == "1",
 )
 app.config["TEMPLATES_AUTO_RELOAD"] = app.config["DEV_RELOAD"]
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0 if app.config["DEV_RELOAD"] else None
+if app.config["TRUST_PROXY"]:
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 AUTH_SCHEMA_READY = False
 AUDIT_SCHEMA_READY = False
 SENSITIVE_AUDIT_FIELDS = {

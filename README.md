@@ -60,6 +60,29 @@ Observacoes:
 - Para deploy, envie a raiz do projeto com `discloud.config` e `requirements.txt`.
 - Consulte tambem `DISCLOUD-DEPLOY.md` para o passo a passo curto e o zip de upload.
 
+## Deploy em VPS Linux (publico)
+
+Melhor opcao para VPS Linux:
+
+- `Gunicorn` executando a aplicacao Flask internamente.
+- `Nginx` como proxy reverso publico (porta 80/443).
+- `systemd` para manter o servico ativo.
+
+Arquivos prontos incluidos no projeto:
+
+- `deploy/systemd/dgp-site.service`
+- `deploy/nginx/dgp-site.conf`
+- `DEPLOY-VPS.md` (passo a passo completo)
+
+Fluxo resumido:
+
+1. Instalar dependencias (`python3`, `venv`, `nginx`).
+2. Criar `.venv` e instalar `requirements.txt`.
+3. Ajustar `.env` (principalmente `DGP_PUBLIC_BASE_URL` e callback do Discord).
+4. Publicar service do systemd e iniciar `dgp-site`.
+5. Publicar site do Nginx e recarregar.
+6. Ativar HTTPS com Certbot.
+
 ## Login com Discord
 
 O sistema agora possui:
