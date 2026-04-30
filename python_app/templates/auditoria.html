@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Auditoria - DGP PMESP{% endblock %}
+{% block heading %}Auditoria{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p>Registro de atividades</p>
+        <h2>Acompanhe quem acessou o sistema, quais acoes executou e em que horario isso aconteceu.</h2>
+    </div>
+    <strong>{{ metrics.total_logs or 0 }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Total</span><strong>{{ metrics.total_logs or 0 }}</strong><small>eventos registrados</small></article>
+    <article><span>Ultimas 24h</span><strong>{{ metrics.last_24h or 0 }}</strong><small>atividades recentes</small></article>
+    <article><span>Acessos</span><strong>{{ metrics.access_logs or 0 }}</strong><small>rotas visitadas</small></article>
+    <article><span>Autenticacao</span><strong>{{ metrics.auth_logs or 0 }}</strong><small>login, logout e OAuth</small></article>
+    <article><span>Operadores</span><strong>{{ metrics.unique_actors or 0 }}</strong><small>usuarios distintos no log</small></article>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head">
+        <h2>Filtros da auditoria</h2>
+    </div>
+    <form class="filters audit-filters" method="get">
+        <input name="q" value="{{ query }}" placeholder="Pesquisar por usuario, rota, alvo ou detalhe">
+        <input name="actor" value="{{ actor_filter }}" placeholder="Filtrar por usuario">
+        <select name="event_type">
+            <option value="">Todos os tipos</option>
+            {% for item in event_types %}
+                <option value="{{ item.event_type }}" {% if event_type == item.event_type %}selected{% endif %}>{{ item.event_type }} ({{ item.total }})</option>
+            {% endfor %}
+        </select>
+        <input name="action" value="{{ action_filter }}" placeholder="Acao exata">
+        <select name="limit">
+            {% for option in [50, 100, 200, 300, 500] %}
+                <option value="{{ option }}" {% if limit == option %}selected{% endif %}>{{ option }} registros</option>
+            {% endfor %}
+        </select>
+        <button>Filtrar</button>
+        <a class="button" href="{{ url_for('auditoria') }}">Limpar</a>
+    </form>
+    <div class="audit-action-cloud">
+        {% for item in actions %}
+            <span>{{ item.action }}: {{ item.total }}</span>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-head audit-stream-head">
+        <div>
+            <h2>Movimentacoes recentes</h2>
+            <p>Somente o essencial: data e hora, quem fez e qual alteracao foi executada.</p>
+        </div>
+        <div class="audit-stream-count">
+            <strong>{{ logs|length }}</strong>
+            <span>registro{% if logs|length != 1 %}s{% endif %} carregado{% if logs|length != 1 %}s{% endif %}</span>
+        </div>
+    </div>
+    {% if logs %}
+    <div class="audit-list-head">
+        <span>Data e hora</span>
+        <span>Quem fez</span>
+        <span>Movimentacao</span>
+    </div>
+    <div class="audit-stream audit-stream-simple">
+        {% for log in logs %}
+        <article class="audit-event-simple">
+            <div class="audit-col audit-when">
+                <strong>{{ log.created_display }}</strong>
+            </div>
+            <div class="audit-col audit-who">
+                <strong>{{ log.actor_display_name or log.actor_username or "anonimo" }}</strong>
+                <div class="audit-subtext">{{ log.actor_role or "-" }}{% if log.actor_auth_provider %} | {{ log.actor_auth_provider }}{% endif %}</div>
+            </div>
+            <div class="audit-col audit-what">
+                <strong class="audit-movement">{{ log.audit_summary }}</strong>
+                {% if log.change_items %}
+                <div class="audit-change-list">
+                    {% for item in log.change_items %}
+                    <div class="audit-change-item">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.before }} -> {{ item.after }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if log.detail_items %}
+                <div class="audit-change-list">
+                    {% for item in log.detail_items %}
+                    <div class="audit-change-item">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.value }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if not log.change_items and not log.detail_items and log.audit_context %}
+                <div class="audit-subtext">{{ log.audit_context }}</div>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="table-empty">Nenhum evento encontrado com os filtros atuais.</p>
+    {% endif %}
+</section>
+{% endblock %}

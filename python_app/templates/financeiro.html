@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% macro payment_table(payments, section_key, title, subtitle, empty_message, section_total=0) %}
+<section class="card compact-card payment-section payment-section-{{ section_key }}">
+    <div class="card-head">
+        <div>
+            <h2>{{ title }}</h2>
+            <p>{{ subtitle }}</p>
+            <p><strong>Total: {{ section_total|money }}</strong></p>
+        </div>
+        <span class="badge">{{ payments|length }} registro{% if payments|length != 1 %}s{% endif %}</span>
+    </div>
+    {% if payments %}
+    <div class="table-wrap finance-records-wrap" data-finance-records data-page-size="5">
+        <table class="compact-table finance-table">
+            <thead>
+                <tr><th>Policial</th><th>Posto</th><th>Departamento</th><th>Origem</th><th>Detalhe</th><th>Bruto</th><th>Desc.</th><th>Liquido</th><th>Status</th><th>Obs.</th><th>Salvamento</th><th>Acao</th></tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr class="payment-row payment-row-{{ payment.status }}" data-finance-record-item>
+                    <td>
+                        <form id="payment-{{ payment.id }}" class="autosave-form" data-status-target="payment-status-{{ payment.id }}" data-net-target="payment-net-{{ payment.id }}" data-current-status="{{ payment.status }}" method="post" action="{{ url_for('atualizar_pagamento', payment_id=payment.id) }}">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <input type="hidden" name="category_filter" value="{{ category }}">
+                            <input type="hidden" name="status_filter" value="{{ status }}">
+                            <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                            <input type="hidden" name="reference_month_filter" value="{{ selected_reference_month }}">
+                            <strong>{{ payment.source_name or payment.full_name }}</strong>
+                            {% if payment.member_id %}
+                                <div class="finance-member-meta">Vinculado ao cadastro de membros</div>
+                            {% else %}
+                                <div class="finance-member-meta finance-member-meta-warn">Sem vinculo no cadastro</div>
+                            {% endif %}
+                            {% if query %}
+                                <div class="finance-member-meta">Total do membro no filtro: <strong>{{ payment.member_total_amount|money }}</strong></div>
+                            {% endif %}
+                        </form>
+                    </td>
+                    <td>{{ payment.rank }}</td>
+                    <td class="sector-col">
+                        {% if payment.source_category == "Administrativo" %}
+                            <select form="payment-{{ payment.id }}" name="department">
+                                <option value="">Sem departamento</option>
+                                {% for sector in sectors %}
+                                    <option value="{{ sector.name }}" {% if payment.department == sector.name %}selected{% endif %}>{{ sector.name }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            {{ payment.sector_names_label or "Sem setor" }}
+                            <input type="hidden" form="payment-{{ payment.id }}" name="department" value="">
+                        {% endif %}
+                    </td>
+                    <td class="select-col">
+                        <select form="payment-{{ payment.id }}" name="source_category" required>
+                            <option value="Horas" {% if payment.source_category == "Horas" %}selected{% endif %}>Horas</option>
+                            <option value="Administrativo" {% if payment.source_category == "Administrativo" %}selected{% endif %}>Administrativo</option>
+                        </select>
+                    </td>
+                    <td class="detail-editor">
+                        {% if payment.source_category == "Horas" %}
+                            <div class="mini-fields">
+                                <label>Total<input form="payment-{{ payment.id }}" name="total_minutes" value="{{ payment.total_minutes|duration }}"></label>
+                                <label>Extra<input form="payment-{{ payment.id }}" name="extra_minutes" value="{{ payment.extra_minutes|duration }}"></label>
+                            </div>
+                            <input type="hidden" form="payment-{{ payment.id }}" name="function_count" value="">
+                            <input type="hidden" form="payment-{{ payment.id }}" name="functions_label" value="">
+                        {% else %}
+                            <div class="mini-fields">
+                                <label>Qtd.<input form="payment-{{ payment.id }}" name="function_count" value="{{ payment.function_count or '' }}"></label>
+                                <label>Funcoes<input form="payment-{{ payment.id }}" name="functions_label" value="{{ payment.functions_label or '' }}"></label>
+                            </div>
+                            <input type="hidden" form="payment-{{ payment.id }}" name="total_minutes" value="">
+                            <input type="hidden" form="payment-{{ payment.id }}" name="extra_minutes" value="">
+                        {% endif %}
+                    </td>
+                    <td class="money-col"><input form="payment-{{ payment.id }}" name="gross_amount" value="{{ payment.gross_amount }}" required></td>
+                    <td class="money-col"><input form="payment-{{ payment.id }}" name="deductions" value="{{ payment.deductions }}" required></td>
+                    <td class="net-col"><strong id="payment-net-{{ payment.id }}">{{ payment.net_amount|money }}</strong></td>
+                    <td class="select-col">
+                        <select form="payment-{{ payment.id }}" name="status" required>
+                            <option value="pago" {% if payment.status == "pago" %}selected{% endif %}>pago</option>
+                            <option value="pendente" {% if payment.status == "pendente" %}selected{% endif %}>pendente</option>
+                            <option value="cancelado" {% if payment.status == "cancelado" %}selected{% endif %}>cancelado</option>
+                        </select>
+                        {% if payment.paid_at %}
+                            <small class="payment-paid-at">Pago em {{ payment.paid_at.strftime("%d/%m/%Y") }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="notes-col"><input form="payment-{{ payment.id }}" name="notes" value="{{ payment.notes or '' }}"></td>
+                    <td><span id="payment-status-{{ payment.id }}" class="autosave-status">Salvo</span></td>
+                    <td class="action-col">
+                        <form method="post" action="{{ url_for('excluir_pagamento', payment_id=payment.id) }}" onsubmit="return confirm('Excluir este pagamento do financeiro?');">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <input type="hidden" name="category_filter" value="{{ category }}">
+                            <input type="hidden" name="status_filter" value="{{ status }}">
+                            <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                            <input type="hidden" name="reference_month_filter" value="{{ selected_reference_month }}">
+                            <button class="button button-danger button-small">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="finance-records-footer">
+        <span class="finance-records-count" data-finance-records-count></span>
+        <div class="finance-records-pager">
+            <button type="button" class="button button-small" data-finance-records-prev>Anterior</button>
+            <span class="finance-records-page" data-finance-records-page></span>
+            <button type="button" class="button button-small" data-finance-records-next>Proximo</button>
+        </div>
+    </div>
+    {% else %}
+        <p class="table-empty">{{ empty_message }}</p>
+    {% endif %}
+</section>
+{% endmacro %}
+{% block title %}Financeiro - DGP PMESP{% endblock %}
+{% block heading %}Gestor de Pagamentos{% endblock %}
+{% block content %}
+{% if saved and saved != "imported" %}<div class="alert">Pagamento salvo no banco e mantido no historico.</div>{% endif %}
+{% if saved == "imported" %}<div class="alert">Processamento mensal concluido. Os lancamentos foram importados e gravados no historico.</div>{% endif %}
+{% if deleted == "1" %}<div class="alert">Pagamento excluido do financeiro.</div>{% endif %}
+{% if deleted == "month" %}<div class="alert">Processamento mensal excluido com sucesso para a competencia selecionada.</div>{% endif %}
+{% if error == "payment" %}<div class="alert error">Preencha valores, detalhe, categoria e status antes de salvar.</div>{% endif %}
+{% if error == "import_missing_source" %}<div class="alert error">Envie um arquivo ou cole o texto para processar os lancamentos.</div>{% endif %}
+{% if error == "import_reference_month" %}<div class="alert error">Informe o mes de referencia no formato correto.</div>{% endif %}
+{% if error == "import_parse" %}<div class="alert error">Nao foi possivel ler os lancamentos. Revise o arquivo/texto e tente novamente.</div>{% endif %}
+{% if error == "delete_month_empty" %}<div class="alert error">Nao ha lancamento no mes selecionado.</div>{% endif %}
+
+<section class="hero">
+    <div>
+        <p>Gestor financeiro</p>
+        <h2>Veja quem ja foi pago, quem ainda falta pagar e mantenha o historico salvo.</h2>
+        <small>Competencia ativa: {{ selected_reference_month }}</small>
+    </div>
+    <strong>{{ payment_overview.total_amount|money }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Filtrados</span><strong>{{ payment_overview.total_count }}</strong><small>{{ payment_overview.total_amount|money }}</small></article>
+    <article><span>Pendentes</span><strong>{{ payment_overview.pending_count }}</strong><small>{{ payment_overview.pending_amount|money }}</small></article>
+    <article><span>Pagos</span><strong>{{ payment_overview.paid_count }}</strong><small>{{ payment_overview.paid_amount|money }}</small></article>
+    <article><span>Cancelados</span><strong>{{ payment_overview.cancelled_count }}</strong><small>{{ payment_overview.cancelled_amount|money }}</small></article>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head"><h2>Processamento mensal</h2></div>
+    <p class="card-intro">Anexe um arquivo ou cole o texto bruto para gerar os lancamentos do mes e manter o historico de processamentos.</p>
+    <form class="form" method="post" action="{{ url_for('processar_financeiro_mes') }}" enctype="multipart/form-data">
+        <label>
+            Mes de referencia
+            <input id="import-reference-month" type="month" name="reference_month" value="{{ import_reference_month_default }}" min="{{ reference_month_min }}" max="{{ reference_month_max }}" onchange="var f=document.getElementById('financeiro-filters');var m=document.getElementById('reference-month-filter');if(f&&m){m.value=this.value;f.submit();}" required>
+        </label>
+        <label>
+            Arquivo de lancamentos
+            <input type="file" name="source_file" accept=".txt,.csv,.log">
+        </label>
+        <label class="full">
+            Texto de lancamentos
+            <textarea name="source_text" placeholder="Cole aqui os lancamentos do mes no formato do financeiro."></textarea>
+        </label>
+        <div class="full processing-actions">
+            <button type="submit">Processar lancamentos do mes</button>
+            <button
+                type="submit"
+                class="button-danger"
+                formaction="{{ url_for('excluir_processamento_mes') }}"
+                formmethod="post"
+                onclick="return confirm('Excluir todo o processamento do mes inteiro selecionado? Esta acao apaga os lancamentos e o historico da competencia.');"
+            >
+                Excluir processamento do mes inteiro
+            </button>
+        </div>
+    </form>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head"><h2>Historico de processamentos</h2></div>
+    {% if import_history %}
+    <div class="table-wrap">
+        <table class="compact-table">
+            <thead>
+                <tr><th>Mes</th><th>Origem</th><th>Entradas</th><th>Criados</th><th>Atualizados</th><th>Executado por</th><th>Data</th><th>Acao</th></tr>
+            </thead>
+            <tbody>
+                {% for batch in import_history %}
+                <tr>
+                    <td>{{ batch.reference_month.strftime("%m/%Y") if batch.reference_month else "-" }}</td>
+                    <td>{{ batch.input_mode }}{% if batch.source_name %} | {{ batch.source_name }}{% endif %}</td>
+                    <td>{{ batch.total_entries }}</td>
+                    <td>{{ batch.created_payments }}</td>
+                    <td>{{ batch.updated_payments }}</td>
+                    <td>{{ batch.actor_name or "Sistema" }}</td>
+                    <td>{{ batch.created_at.strftime("%d/%m/%Y %H:%M") if batch.created_at else "-" }}</td>
+                    <td>
+                        <a href="{{ url_for('financeiro', reference_month=batch.reference_month.strftime('%Y-%m')) }}">Abrir mes</a>
+                        <form method="post" action="{{ url_for('excluir_processamento_mes') }}" onsubmit="return confirm('Excluir todo o processamento deste mes? Esta acao apaga os lancamentos e o historico desta competencia.');">
+                            <input type="hidden" name="reference_month" value="{{ batch.reference_month.strftime('%Y-%m') }}">
+                            <button class="button button-danger button-small">Excluir mes</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="table-empty">Nenhum processamento mensal foi executado ate agora.</p>
+    {% endif %}
+</section>
+
+<section class="card compact-card">
+    <div class="card-head"><h2>Filtros do gestor</h2><a href="{{ url_for('relatorio_financeiro') }}">Gerar relatorio por setor</a></div>
+    <p class="card-intro">Marcar como <strong>pago</strong> nao apaga o registro. Ele continua salvo e aparece na secao de pagos.</p>
+    <form id="financeiro-filters" class="filters" method="get">
+        <input name="q" value="{{ query }}" placeholder="Pesquisar por membro, posto, funcao ou categoria">
+        <select name="category">
+            <option value="">Todas as categorias</option>
+            <option value="Horas" {% if category == "Horas" %}selected{% endif %}>Horas</option>
+            <option value="Administrativo" {% if category == "Administrativo" %}selected{% endif %}>Administrativo</option>
+        </select>
+        <select name="status">
+            <option value="">Todos os status</option>
+            <option value="pendente" {% if status == "pendente" %}selected{% endif %}>Pendente</option>
+            <option value="pago" {% if status == "pago" %}selected{% endif %}>Pago</option>
+            <option value="cancelado" {% if status == "cancelado" %}selected{% endif %}>Cancelado</option>
+        </select>
+        <select name="sector">
+            <option value="">Todos os departamentos</option>
+            {% for sector in sectors %}
+                <option value="{{ sector.name }}" {% if selected_sector == sector.name %}selected{% endif %}>{{ sector.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="reference_month" id="reference-month-filter">
+            {% for month in reference_months %}
+                <option value="{{ month.month_key }}" {% if selected_reference_month == month.month_key %}selected{% endif %}>{{ month.month_label }} ({{ month.total }})</option>
+            {% endfor %}
+        </select>
+        <button>Pesquisar</button>
+        <a class="button" href="{{ url_for('financeiro') }}">Limpar</a>
+        <a class="button" href="{{ url_for('demonstrativo_financeiro', sector=selected_sector, status=status, category=category, reference_month=selected_reference_month) }}">Demonstrativo</a>
+    </form>
+</section>
+
+{% if selected_reference_month and payment_overview.total_count == 0 %}
+<section class="card">
+    <div class="card-head"><h2>Sem registros no momento</h2></div>
+    <p class="table-empty">
+        Nao ha lancamentos para o mes selecionado ({{ selected_reference_month }}).
+        Selecione outro mes ou processe os lancamentos desta competencia.
+    </p>
+</section>
+{% else %}
+{{ payment_table(pending_payments, "pendente", "Falta pagar", "Registros aguardando pagamento.", "Nenhum pagamento pendente com os filtros atuais.", payment_overview.pending_amount) }}
+{{ payment_table(paid_payments, "pago", "Ja pagos", "Historico de pagamentos concluidos.", "Nenhum pagamento marcado como pago com os filtros atuais.", payment_overview.paid_amount) }}
+{{ payment_table(cancelled_payments, "cancelado", "Cancelados", "Pagamentos removidos da fila sem perder o historico.", "Nenhum pagamento cancelado com os filtros atuais.", payment_overview.cancelled_amount) }}
+
+<section class="card">
+    <div class="card-head"><h2>Distribuicao por posto</h2></div>
+    <div class="list">
+        {% for row in rank_distribution %}
+            <div class="row">
+                <div><strong>{{ row.rank_name }}</strong><span>{{ row.total }} registros</span></div>
+                <b>{{ row.amount|money }}</b>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-head"><h2>Resumo do filtro atual</h2></div>
+    {% if filtered_metrics.total_count %}
+    <div class="list">
+        <div class="row"><div><strong>Total filtrado</strong><span>{{ filtered_metrics.total_count }} registros</span></div><b>{{ filtered_metrics.total_amount|money }}</b></div>
+        <div class="row"><div><strong>Horas</strong><span>{{ filtered_metrics.hourly_count }} registros</span></div><b>{{ filtered_metrics.hourly_amount|money }}</b></div>
+        <div class="row"><div><strong>Administrativo</strong><span>{{ filtered_metrics.administrative_count }} registros</span></div><b>{{ filtered_metrics.administrative_amount|money }}</b></div>
+        <div class="row"><div><strong>Horas extras</strong><span>{{ filtered_metrics.total_minutes|duration }} totais</span></div><b>{{ filtered_metrics.extra_minutes|duration }}</b></div>
+    </div>
+    {% else %}
+    <p class="table-empty">Sem registros para o filtro selecionado.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    const importMonthInput = document.getElementById("import-reference-month");
+    const monthFilter = document.getElementById("reference-month-filter");
+    const filtersForm = document.getElementById("financeiro-filters");
+    if (importMonthInput && monthFilter && filtersForm) {
+        importMonthInput.addEventListener("change", () => {
+            monthFilter.value = importMonthInput.value;
+            filtersForm.submit();
+        });
+    }
+    if (monthFilter && filtersForm) {
+        monthFilter.addEventListener("change", () => filtersForm.submit());
+    }
+
+    document.querySelectorAll("[data-finance-records]").forEach((wrap) => {
+        const section = wrap.closest(".payment-section");
+        if (!section) {
+            return;
+        }
+
+        const items = Array.from(wrap.querySelectorAll("[data-finance-record-item]"));
+        const countLabel = section.querySelector("[data-finance-records-count]");
+        const pageLabel = section.querySelector("[data-finance-records-page]");
+        const prevButton = section.querySelector("[data-finance-records-prev]");
+        const nextButton = section.querySelector("[data-finance-records-next]");
+        const pageSize = Math.max(1, Number.parseInt(wrap.dataset.pageSize || "5", 10));
+        const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+        let currentPage = 1;
+
+        function renderPage() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+
+            items.forEach((item, index) => {
+                item.hidden = !(index >= start && index < end);
+            });
+
+            const from = items.length ? start + 1 : 0;
+            const to = Math.min(end, items.length);
+
+            if (countLabel) {
+                countLabel.textContent = `${from}-${to} de ${items.length} registros`;
+            }
+            if (pageLabel) {
+                pageLabel.textContent = `Pagina ${currentPage} de ${totalPages}`;
+            }
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1;
+            }
+            if (nextButton) {
+                nextButton.disabled = currentPage >= totalPages;
+            }
+            wrap.scrollTop = 0;
+        }
+
+        prevButton?.addEventListener("click", () => {
+            if (currentPage <= 1) {
+                return;
+            }
+            currentPage -= 1;
+            renderPage();
+        });
+
+        nextButton?.addEventListener("click", () => {
+            if (currentPage >= totalPages) {
+                return;
+            }
+            currentPage += 1;
+            renderPage();
+        });
+
+        renderPage();
+    });
+})();
+</script>
+{% endblock %}

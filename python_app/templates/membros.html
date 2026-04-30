@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}Membros - DGP PMESP{% endblock %}
+{% block heading %}Membros{% endblock %}
+{% block content %}
+{% if saved == "created" %}
+    <div class="alert">Novo membro cadastrado no sistema.</div>
+{% elif saved == "no_admin" %}
+    <div class="alert">Policiais sem lancamento administrativo foram marcados como SEM SETOR ADM.</div>
+{% elif saved == "merged" %}
+    <div class="alert">{{ request.args.get("merged", "0") }} cadastro(s) duplicado(s) foram unificados.</div>
+{% elif saved == "manual_merged" %}
+    <div class="alert">Os dois cadastros foram acoplados. Pagamentos e setores agora estao no cadastro principal.</div>
+{% elif saved %}
+    <div class="alert">Dados do policial salvos no banco.</div>
+{% endif %}
+{% if error == "missing" %}<div class="alert error">Preencha nome, matricula, posto, setor, funcao e status antes de salvar.</div>{% endif %}
+{% if error == "duplicate" %}<div class="alert error">Ja existe outro policial com essa matricula.</div>{% endif %}
+{% if error == "merge_missing" %}<div class="alert error">Selecione dois cadastros validos para acoplar.</div>{% endif %}
+{% if error == "merge_same" %}<div class="alert error">Escolha dois cadastros diferentes para acoplar.</div>{% endif %}
+
+<section class="card compact-card">
+    <div class="card-head">
+        <div>
+            <h2>Novo membro</h2>
+            <p>Cadastre o policial direto nesta tela e ja vincule os setores necessarios.</p>
+        </div>
+    </div>
+    <form class="member-create-form" method="post" action="{{ url_for('criar_membro') }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+        <label>Nome completo<input name="full_name" required></label>
+        <label>Matricula<input name="registration_number" required></label>
+        <label>Posto<input name="rank" required></label>
+        <label>Setor principal<input name="unit" placeholder="Ex.: PATAMO" required></label>
+        <label>Funcao<input name="role" required></label>
+        <label>
+            Status
+            <select name="status" required>
+                <option value="ativo">ativo</option>
+                <option value="afastado">afastado</option>
+                <option value="inativo">inativo</option>
+            </select>
+        </label>
+        <div class="form-block full">
+            <span>Setores vinculados</span>
+            <div class="check-list">
+                {% for sector in sectors %}
+                    <label class="sector-option"><input type="checkbox" name="units" value="{{ sector.name }}"><span>{{ sector.name }}</span></label>
+                {% endfor %}
+            </div>
+        </div>
+        <button>Cadastrar membro</button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-head">
+        <h2>Organizacao por setor</h2>
+        <div class="actions">
+            <form method="post" action="{{ url_for('marcar_sem_setor_adm') }}">
+                <input type="hidden" name="q" value="{{ query }}">
+                <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                <button>Marcar sem setor adm</button>
+            </form>
+            <form method="post" action="{{ url_for('unificar_membros_duplicados') }}">
+                <input type="hidden" name="q" value="{{ query }}">
+                <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                <button>Unificar duplicados seguros</button>
+            </form>
+            <a href="{{ url_for('setores') }}">Gerenciar setores</a>
+        </div>
+    </div>
+    <div class="sector-grid">
+        {% for sector in sector_summary %}
+            <div class="sector-card" data-sector-card="{{ sector.name }}">
+                <strong>{{ sector.name }}</strong>
+                <span><b data-sector-count>{{ sector.total }}</b> policial(is)</span>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card merge-card">
+    <div class="card-head">
+        <div>
+            <h2>Acoplar cadastros</h2>
+            <p>Move pagamentos e setores para o cadastro que deve ficar, depois remove o registro duplicado.</p>
+        </div>
+    </div>
+    <form class="merge-form" method="post" action="{{ url_for('acoplar_membros') }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+        <label>
+            Cadastro que fica
+            <select name="canonical_member_id" required>
+                <option value="">Selecione</option>
+                {% for option in member_options %}
+                    <option value="{{ option.id }}">#{{ option.id }} - {{ option.full_name }} | {{ option.rank }} | {{ option.registration_number }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Cadastro para acoplar e remover
+            <select name="duplicate_member_id" required>
+                <option value="">Selecione</option>
+                {% for option in member_options %}
+                    <option value="{{ option.id }}">#{{ option.id }} - {{ option.full_name }} | {{ option.rank }} | {{ option.registration_number }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button>Acoplar registros</button>
+    </form>
+</section>
+
+<section class="card">
+    <form class="filters" method="get">
+        <input name="q" value="{{ query }}" placeholder="Pesquisar por nome, matricula, posto, setor ou funcao">
+        <select name="sector">
+            <option value="">Todos os setores</option>
+            {% for sector in sectors %}
+                <option value="{{ sector.name }}" {% if selected_sector == sector.name %}selected{% endif %}>{{ sector.name }}</option>
+            {% endfor %}
+        </select>
+        <button>Pesquisar</button>
+        <a class="button" href="{{ url_for('membros') }}">Limpar</a>
+    </form>
+    <div class="table-wrap members-records-wrap" data-members-records data-page-size="5">
+        <table class="members-table">
+            <thead><tr><th>Nome</th><th>Matricula</th><th>Posto</th><th>Setores</th><th>Funcao</th><th>Status</th><th>Salvamento</th></tr></thead>
+            <tbody>
+                {% for member in members %}
+                <tr data-members-record-item>
+                    <td>
+                        <form id="member-{{ member.id }}" class="autosave-form" data-status-target="member-status-{{ member.id }}" data-sync-sectors="1" data-current-sectors="{{ member.sector_values|join('||') }}" method="post" action="{{ url_for('atualizar_membro', member_id=member.id) }}">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                            <input name="full_name" value="{{ member.full_name }}" required>
+                        </form>
+                    </td>
+                    <td><input form="member-{{ member.id }}" name="registration_number" value="{{ member.registration_number }}" required></td>
+                    <td><input form="member-{{ member.id }}" name="rank" value="{{ member.rank }}" required></td>
+                    <td>
+                        <div class="check-list">
+                            {% for sector_value in member.sector_values %}
+                                {% if sector_value not in sector_names %}
+                                    <label class="sector-option"><input form="member-{{ member.id }}" type="checkbox" name="units" value="{{ sector_value }}" checked><span>{{ sector_value }}</span></label>
+                                {% endif %}
+                            {% endfor %}
+                            {% for sector in sectors %}
+                                <label class="sector-option"><input form="member-{{ member.id }}" type="checkbox" name="units" value="{{ sector.name }}" {% if sector.name in member.sector_values %}checked{% endif %}><span>{{ sector.name }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td><input form="member-{{ member.id }}" name="role" value="{{ member.role }}" required></td>
+                    <td>
+                        <select form="member-{{ member.id }}" name="status" required>
+                            <option value="ativo" {% if member.status == "ativo" %}selected{% endif %}>ativo</option>
+                            <option value="afastado" {% if member.status == "afastado" %}selected{% endif %}>afastado</option>
+                            <option value="inativo" {% if member.status == "inativo" %}selected{% endif %}>inativo</option>
+                        </select>
+                    </td>
+                    <td><span id="member-status-{{ member.id }}" class="autosave-status">Salvo</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="members-records-footer">
+        <span class="members-records-count" data-members-records-count></span>
+        <div class="members-records-pager">
+            <button type="button" class="button button-small" data-members-records-prev>Anterior</button>
+            <span class="members-records-page" data-members-records-page></span>
+            <button type="button" class="button button-small" data-members-records-next>Proximo</button>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    document.querySelectorAll("[data-members-records]").forEach((wrap) => {
+        const section = wrap.closest(".card");
+        if (!section) {
+            return;
+        }
+
+        const items = Array.from(wrap.querySelectorAll("[data-members-record-item]"));
+        const countLabel = section.querySelector("[data-members-records-count]");
+        const pageLabel = section.querySelector("[data-members-records-page]");
+        const prevButton = section.querySelector("[data-members-records-prev]");
+        const nextButton = section.querySelector("[data-members-records-next]");
+        const pageSize = Math.max(1, Number.parseInt(wrap.dataset.pageSize || "5", 10));
+        const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+        let currentPage = 1;
+
+        function renderPage() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+
+            items.forEach((item, index) => {
+                item.hidden = !(index >= start && index < end);
+            });
+
+            const from = items.length ? start + 1 : 0;
+            const to = Math.min(end, items.length);
+
+            if (countLabel) {
+                countLabel.textContent = `${from}-${to} de ${items.length} registros`;
+            }
+            if (pageLabel) {
+                pageLabel.textContent = `Pagina ${currentPage} de ${totalPages}`;
+            }
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1;
+            }
+            if (nextButton) {
+                nextButton.disabled = currentPage >= totalPages;
+            }
+            wrap.scrollTop = 0;
+        }
+
+        prevButton?.addEventListener("click", () => {
+            if (currentPage <= 1) {
+                return;
+            }
+            currentPage -= 1;
+            renderPage();
+        });
+
+        nextButton?.addEventListener("click", () => {
+            if (currentPage >= totalPages) {
+                return;
+            }
+            currentPage += 1;
+            renderPage();
+        });
+
+        renderPage();
+    });
+})();
+</script>
+{% endblock %}

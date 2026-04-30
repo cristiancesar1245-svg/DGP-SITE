@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Setores - DGP PMESP{% endblock %}
+{% block heading %}Setores{% endblock %}
+{% block content %}
+{% if saved %}<div class="alert">Setor salvo no banco.</div>{% endif %}
+{% if error == "missing" %}<div class="alert error">Preencha o nome e o status do setor.</div>{% endif %}
+{% if error == "duplicate" %}<div class="alert error">Ja existe um setor com esse nome.</div>{% endif %}
+
+<section class="card">
+    <div class="card-head"><h2>Novo setor</h2></div>
+    <form class="form" method="post" action="{{ url_for('criar_setor') }}">
+        <label>Nome do setor<input name="name" required></label>
+        <label>Status
+            <select name="status" required>
+                <option value="ativo">ativo</option>
+                <option value="inativo">inativo</option>
+            </select>
+        </label>
+        <label class="full">Descricao<input name="description"></label>
+        <button>Criar setor</button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-head"><h2>Setores cadastrados</h2></div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Setor</th><th>Descricao</th><th>Policiais</th><th>Status</th><th>Acao</th></tr></thead>
+            <tbody>
+                {% for sector in sectors %}
+                <tr>
+                    <td>
+                        <form id="sector-{{ sector.id }}" method="post" action="{{ url_for('atualizar_setor', sector_id=sector.id) }}">
+                            <input name="name" value="{{ sector.name }}" required>
+                        </form>
+                    </td>
+                    <td><input form="sector-{{ sector.id }}" name="description" value="{{ sector.description or '' }}"></td>
+                    <td>{{ sector.members_count }}</td>
+                    <td>
+                        <select form="sector-{{ sector.id }}" name="status" required>
+                            <option value="ativo" {% if sector.status == "ativo" %}selected{% endif %}>ativo</option>
+                            <option value="inativo" {% if sector.status == "inativo" %}selected{% endif %}>inativo</option>
+                        </select>
+                    </td>
+                    <td><button form="sector-{{ sector.id }}">Salvar</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

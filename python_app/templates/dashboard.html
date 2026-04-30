@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Analytics - DGP PMESP{% endblock %}
+{% block heading %}Analytics{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p>Centro de controle</p>
+        <h2>Gestao de pessoal, financeiro e inscricoes.</h2>
+    </div>
+    <strong>{{ metrics.total_amount|money }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Membros</span><strong>{{ metrics.members_count }}</strong><small>Registros no banco</small></article>
+    <article><span>Pagamentos</span><strong>{{ metrics.payments_count }}</strong><small>{{ metrics.hourly_count }} por horas</small></article>
+    <article><span>Administrativo</span><strong>{{ metrics.administrative_count }}</strong><small>{{ metrics.administrative_amount|money }}</small></article>
+    <article><span>Horas extras</span><strong>{{ metrics.extra_minutes|duration }}</strong><small>{{ metrics.hourly_amount|money }}</small></article>
+</section>
+
+<section class="grid two">
+    <div class="card">
+        <div class="card-head"><h2>Maiores pagamentos</h2><a href="{{ url_for('financeiro') }}">Abrir financeiro</a></div>
+        <div class="list dashboard-records" data-records-list data-page-size="6">
+            {% for payment in top_payments %}
+                <div class="row dashboard-record-row" data-record-item>
+                    <div><strong>{{ payment.source_name }}</strong><span>{{ payment.source_category }} | {{ payment.rank }}</span></div>
+                    <b>{{ payment.net_amount|money }}</b>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="dashboard-records-footer">
+            <span class="dashboard-records-count" data-records-count></span>
+            <div class="dashboard-records-pager">
+                <button type="button" class="button button-small" data-records-prev>Anterior</button>
+                <span class="dashboard-records-page" data-records-page></span>
+                <button type="button" class="button button-small" data-records-next>Proximo</button>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-head"><h2>Membros recentes</h2><a href="{{ url_for('membros') }}">Ver membros</a></div>
+        <div class="list dashboard-records" data-records-list data-page-size="6">
+            {% for member in recent_members %}
+                <div class="row dashboard-record-row" data-record-item>
+                    <div><strong>{{ member.full_name }}</strong><span>{{ member.rank }} | {{ member.role }}</span></div>
+                    <b>{{ member.status }}</b>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="dashboard-records-footer">
+            <span class="dashboard-records-count" data-records-count></span>
+            <div class="dashboard-records-pager">
+                <button type="button" class="button button-small" data-records-prev>Anterior</button>
+                <span class="dashboard-records-page" data-records-page></span>
+                <button type="button" class="button button-small" data-records-next>Proximo</button>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+    document.querySelectorAll(".card").forEach((card) => {
+        const list = card.querySelector("[data-records-list]");
+        if (!list) {
+            return;
+        }
+
+        const items = Array.from(list.querySelectorAll("[data-record-item]"));
+        const countLabel = card.querySelector("[data-records-count]");
+        const pageLabel = card.querySelector("[data-records-page]");
+        const prevButton = card.querySelector("[data-records-prev]");
+        const nextButton = card.querySelector("[data-records-next]");
+        const pageSize = Math.max(1, Number.parseInt(list.dataset.pageSize || "6", 10));
+        const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+        let currentPage = 1;
+
+        function renderPage() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+
+            items.forEach((item, index) => {
+                item.hidden = !(index >= start && index < end);
+            });
+
+            if (countLabel) {
+                const from = items.length ? start + 1 : 0;
+                const to = Math.min(end, items.length);
+                countLabel.textContent = `${from}-${to} de ${items.length} registros`;
+            }
+            if (pageLabel) {
+                pageLabel.textContent = `Pagina ${currentPage} de ${totalPages}`;
+            }
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1;
+            }
+            if (nextButton) {
+                nextButton.disabled = currentPage >= totalPages;
+            }
+        }
+
+        prevButton?.addEventListener("click", () => {
+            if (currentPage <= 1) {
+                return;
+            }
+            currentPage -= 1;
+            renderPage();
+        });
+
+        nextButton?.addEventListener("click", () => {
+            if (currentPage >= totalPages) {
+                return;
+            }
+            currentPage += 1;
+            renderPage();
+        });
+
+        renderPage();
+    });
+})();
+</script>
+{% endblock %}

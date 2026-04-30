@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Relatorio financeiro - DGP PMESP{% endblock %}
+{% block heading %}Relatorio financeiro{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p>Relatorio por setor</p>
+        <h2>Administrativo, horas extras e total por membro.</h2>
+    </div>
+    <strong>{{ totals.total_amount|money }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Membros</span><strong>{{ totals.members_count }}</strong><small>Vinculos no relatorio</small></article>
+    <article><span>Administrativo</span><strong>{{ totals.administrative_amount|money }}</strong><small>Trabalho administrativo</small></article>
+    <article><span>Horas extras</span><strong>{{ totals.hourly_amount|money }}</strong><small>{{ totals.extra_minutes|duration }} extras</small></article>
+    <article><span>Total</span><strong>{{ totals.total_amount|money }}</strong><small>Administrativo + horas</small></article>
+</section>
+
+<section class="card compact-card">
+    <form class="filters" method="get">
+        <select name="sector">
+            <option value="">Todos os setores</option>
+            {% for sector in sectors %}
+                <option value="{{ sector.name }}" {% if selected_sector == sector.name %}selected{% endif %}>{{ sector.name }}</option>
+            {% endfor %}
+        </select>
+        <button>Filtrar</button>
+        <a class="button" href="{{ url_for('relatorio_financeiro') }}">Limpar</a>
+        <a class="button" href="{{ url_for('relatorio_financeiro', sector=selected_sector, format='csv') }}">Baixar CSV</a>
+        <button type="button" onclick="window.print()">Imprimir relatorio</button>
+    </form>
+</section>
+
+{% for sector in report %}
+<section class="card report-sector">
+    <div class="card-head">
+        <div>
+            <h2>{{ sector.name }}</h2>
+            <p>{{ sector.members_count }} membro(s)</p>
+        </div>
+        <strong>{{ sector.total_amount|money }}</strong>
+    </div>
+    <div class="report-totals">
+        <span>Administrativo <b>{{ sector.administrative_amount|money }}</b></span>
+        <span>Horas extras <b>{{ sector.hourly_amount|money }}</b></span>
+        <span>Tempo extra <b>{{ sector.extra_minutes|duration }}</b></span>
+    </div>
+    <div class="table-wrap">
+        <table class="compact-table report-table">
+            <thead>
+                <tr><th>Membro</th><th>Matricula</th><th>Posto</th><th>Funcao</th><th>Administrativo</th><th>Horas extras</th><th>Tempo extra</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for member in sector.members %}
+                <tr>
+                    <td><strong>{{ member.full_name }}</strong></td>
+                    <td>{{ member.registration_number }}</td>
+                    <td>{{ member.rank }}</td>
+                    <td>{{ member.role }}</td>
+                    <td>{{ member.administrative_amount|money }}</td>
+                    <td>{{ member.hourly_amount|money }}</td>
+                    <td>{{ member.extra_minutes|duration }}</td>
+                    <td><strong>{{ member.total_amount|money }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<section class="card">
+    <p>Nenhum membro encontrado para o setor selecionado.</p>
+</section>
+{% endfor %}
+{% endblock %}

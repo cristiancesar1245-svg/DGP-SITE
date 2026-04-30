@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}DGP PMESP{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+    <div class="shell">
+        <aside class="sidebar">
+            <a class="brand" href="{{ url_for('dashboard') }}">
+                <div class="brand-logo-block">
+                    <img src="{{ url_for('static', filename='images/logo_policiamilitar_high.png') }}" alt="Logo da PMESP">
+                    <small>Policia Militar do Estado de Sao Paulo</small>
+                </div>
+                <span>DGP</span>
+            </a>
+            {% if current_user %}
+            <div class="sidebar-user">
+                {% if current_user.avatar_url %}<img src="{{ current_user.avatar_url }}" alt="Avatar do Discord">{% endif %}
+                <div>
+                    <strong>{{ current_user.display_name or current_user.username }}</strong>
+                    <small>{{ current_user.role or "usuario" }}{% if current_user.auth_provider %} | {{ current_user.auth_provider }}{% endif %}</small>
+                </div>
+                <a class="sidebar-logout" href="{{ url_for('logout') }}">Sair</a>
+            </div>
+            {% endif %}
+            <nav>
+                <a href="{{ url_for('dashboard') }}">Analytics</a>
+                <a href="{{ url_for('financeiro') }}">Financeiro</a>
+                <a href="{{ url_for('relatorio_financeiro') }}">Relatorio financeiro</a>
+                <a href="{{ url_for('setores') }}">Setores</a>
+                <a href="{{ url_for('membros') }}">Membros</a>
+                <a href="{{ url_for('inscricoes') }}">Inscricoes</a>
+                <a href="{{ url_for('inscricao') }}">Nova inscricao</a>
+                {% if current_user_is_admin %}
+                <a href="{{ url_for('acessos') }}">Acessos</a>
+                {% endif %}
+            </nav>
+        </aside>
+        <main>
+            <img class="watermark" src="{{ url_for('static', filename='images/logo_policiamilitar_high.png') }}" alt="">
+            <header class="page-title">
+                <div>
+                    <p>Departamento de Gestao Pessoal</p>
+                    <h1>{% block heading %}Painel{% endblock %}</h1>
+                </div>
+            </header>
+            {% block content %}{% endblock %}
+            <footer>Policia Militar do Estado de Sao Paulo <strong>Lealdade e Constancia</strong></footer>
+        </main>
+    </div>
+    {% block scripts %}{% endblock %}
+    <script>
+    (() => {
+        const timers = new WeakMap();
+
+        function setStatus(form, text, state) {
+            const target = document.getElementById(form.dataset.statusTarget);
+            if (!target) {
+                return;
+            }
+            target.textContent = text;
+            target.dataset.state = state;
+        }
+
+        async function saveForm(form) {
+            setStatus(form, "Salvando", "saving");
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                });
+
+                if (!response.ok) {
+                    throw new Error("save failed");
+                }
+
+                const data = await response.json().catch(() => ({}));
+                if (data.net_amount && form.dataset.netTarget) {
+                    const netTarget = document.getElementById(form.dataset.netTarget);
+                    if (netTarget) {
+                        netTarget.textContent = data.net_amount;
+                    }
+                }
+                if (data.sectors) {
+                    syncSectorSummary(form, data.sectors);
+                }
+
+                setStatus(form, "Salvo", "saved");
+            } catch (error) {
+                setStatus(form, "Erro", "error");
+            }
+        }
+
+        function queueSave(form, wait) {
+            window.clearTimeout(timers.get(form));
+            timers.set(form, window.setTimeout(() => saveForm(form), wait));
+        }
+
+        function parseSectors(value) {
+            if (!value) {
+                return [];
+            }
+            return value.split("||").filter(Boolean);
+        }
+
+        function updateSectorCard(sectorName, delta) {
+            const card = document.querySelector(`[data-sector-card="${CSS.escape(sectorName)}"]`);
+            if (!card) {
+                return;
+            }
+            const count = card.querySelector("[data-sector-count]");
+            if (!count) {
+                return;
+            }
+            const nextTotal = Math.max(0, Number.parseInt(count.textContent, 10) + delta);
+            count.textContent = String(nextTotal);
+        }
+
+        function syncSectorSummary(form, sectors) {
+            if (!form.dataset.syncSectors) {
+                return;
+            }
+
+            const previous = parseSectors(form.dataset.currentSectors);
+            const current = Array.isArray(sectors) ? sectors : [];
+            const previousSet = new Set(previous);
+            const currentSet = new Set(current);
+
+            previous.forEach((sectorName) => {
+                if (!currentSet.has(sectorName)) {
+                    updateSectorCard(sectorName, -1);
+                }
+            });
+            current.forEach((sectorName) => {
+                if (!previousSet.has(sectorName)) {
+                    updateSectorCard(sectorName, 1);
+                }
+            });
+
+            form.dataset.currentSectors = current.join("||");
+        }
+
+        document.querySelectorAll(".autosave-form").forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                saveForm(form);
+            });
+
+            const controls = new Set([
+                ...Array.from(form.elements),
+                ...Array.from(document.querySelectorAll(`[form="${form.id}"]`)),
+            ]);
+
+            controls.forEach((field) => {
+                if (field.type === "hidden") {
+                    return;
+                }
+
+                if (field.type === "checkbox" || field.tagName === "SELECT") {
+                    field.addEventListener("change", () => queueSave(form, 80));
+                    return;
+                }
+
+                field.addEventListener("input", () => queueSave(form, 700));
+                field.addEventListener("change", () => queueSave(form, 80));
+            });
+        });
+    })();
+    </script>
+</body>
+</html>

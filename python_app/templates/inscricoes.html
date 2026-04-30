@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Inscricoes - DGP PMESP{% endblock %}
+{% block heading %}Inscricoes{% endblock %}
+{% block content %}
+{% if saved %}<div class="alert">Inscricao enviada para analise.</div>{% endif %}
+<section class="card">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Nome</th><th>Matricula</th><th>Posto</th><th>Unidade</th><th>Status</th><th>Enviada em</th></tr></thead>
+            <tbody>
+                {% for application in applications %}
+                <tr>
+                    <td>{{ application.full_name }}</td>
+                    <td>{{ application.registration_number }}</td>
+                    <td>{{ application.rank }}</td>
+                    <td>{{ application.unit }}</td>
+                    <td><span class="badge">{{ application.status }}</span></td>
+                    <td>{{ application.submitted_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

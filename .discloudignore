@@ -1,0 +1,10 @@
+.venv/
+python-runtime/
+__pycache__/
+python_app/__pycache__/
+.git/
+.cache/
+web.config
+run-python-site.bat
+run-python-site.ps1
+write-test.txt

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Demonstrativo financeiro - DGP PMESP{% endblock %}
+{% block heading %}Demonstrativo financeiro{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p>Demonstrativo para impressao</p>
+        <h2>Relacao detalhada dos lancamentos financeiros conforme os filtros selecionados.</h2>
+    </div>
+    <strong>{{ overview.net_amount|money }}</strong>
+</section>
+
+<section class="card statement-cover">
+    <div class="statement-cover-head">
+        <div class="statement-cover-copy">
+            <span class="statement-cover-eyebrow">Resumo do demonstrativo</span>
+            <h2>Visao consolidada para impressao</h2>
+            <p>Primeira folha reservada para o resumo geral do documento, com destaque para o quantitativo e o valor dos pagamentos realizados.</p>
+        </div>
+        <div class="statement-cover-highlight">
+            <span>Total pago</span>
+            <strong>{{ overview.paid_amount|money }}</strong>
+            <small>{{ overview.paid_count }} pagamento(s) marcados como pagos</small>
+        </div>
+    </div>
+    <div class="actions statement-actions">
+        <a class="button" href="{{ url_for('relatorio_financeiro', sector=selected_sector, status=selected_status) }}">Voltar ao relatorio</a>
+        <button type="button" onclick="window.print()">Imprimir demonstrativo</button>
+    </div>
+    <section class="kpis statement-top-kpis">
+        <article class="statement-kpi-primary">
+            <span>Pagos</span>
+            <strong>{{ overview.paid_count }}</strong>
+            <small>{{ overview.paid_amount|money }}</small>
+        </article>
+        <article>
+            <span>Pendentes</span>
+            <strong>{{ overview.pending_count }}</strong>
+            <small>{{ overview.pending_amount|money }}</small>
+        </article>
+        <article>
+            <span>Cancelados</span>
+            <strong>{{ overview.cancelled_count }}</strong>
+            <small>{{ overview.cancelled_amount|money }}</small>
+        </article>
+        <article>
+            <span>Emitido em</span>
+            <strong>{{ generated_at.strftime("%d/%m/%Y") }}</strong>
+            <small>{{ generated_at.strftime("%H:%M") }}</small>
+        </article>
+    </section>
+    <div class="card-head statement-cover-scope-head">
+        <div>
+            <h2>Escopo do documento</h2>
+            <p>Setor, status e categoria atualmente aplicados ao demonstrativo.</p>
+        </div>
+    </div>
+    <div class="statement-scope">
+        <article>
+            <span>Setor</span>
+            <strong>{{ selected_sector or "Todos" }}</strong>
+        </article>
+        <article>
+            <span>Status</span>
+            <strong>{{ selected_status or "Todos" }}</strong>
+        </article>
+        <article>
+            <span>Categoria</span>
+            <strong>{{ selected_category or "Todas" }}</strong>
+        </article>
+        <article>
+            <span>Itens</span>
+            <strong>{{ overview.total_count }}</strong>
+        </article>
+        <article>
+            <span>Mes</span>
+            <strong>{{ selected_reference_month or "Todos" }}</strong>
+        </article>
+    </div>
+</section>
+
+{% for sector in report %}
+<section class="card report-sector{% if loop.first %} statement-first-sector{% endif %}{% if not loop.first %} report-sector-page-break{% endif %}">
+    <div class="card-head">
+        <div>
+            <h2>{{ sector.name }}</h2>
+            <p>{{ sector.total_count }} lancamento(s)</p>
+        </div>
+        <strong>{{ sector.net_amount|money }}</strong>
+    </div>
+    <div class="statement-sector-summary">
+        <article>
+            <span>Bruto</span>
+            <strong>{{ sector.gross_amount|money }}</strong>
+        </article>
+        <article>
+            <span>Descontos</span>
+            <strong>{{ sector.deductions_amount|money }}</strong>
+        </article>
+        <article>
+            <span>Liquido</span>
+            <strong>{{ sector.net_amount|money }}</strong>
+        </article>
+        <article>
+            <span>Pagos</span>
+            <strong>{{ sector.paid_count }}</strong>
+        </article>
+        <article>
+            <span>Pendentes</span>
+            <strong>{{ sector.pending_count }}</strong>
+        </article>
+        <article>
+            <span>Cancelados</span>
+            <strong>{{ sector.cancelled_count }}</strong>
+        </article>
+    </div>
+    <div class="table-wrap">
+        <table class="compact-table statement-table">
+            <colgroup>
+                <col class="statement-col-person">
+                <col class="statement-col-registration">
+                <col class="statement-col-category">
+                <col class="statement-col-detail">
+                <col class="statement-col-values">
+                <col class="statement-col-status">
+            </colgroup>
+            <thead>
+                <tr><th>Policial</th><th>Cadastro</th><th>Categoria</th><th>Jornada / detalhe</th><th>Valores</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for item in sector.entries %}
+                <tr class="statement-row statement-row-{{ item.status }}">
+                    <td>
+                        <div class="statement-person">
+                            <strong>{{ item.source_name }}</strong>
+                        </div>
+                        {% if item.full_name and item.full_name != item.source_name %}
+                            <div class="statement-subline">{{ item.full_name }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ item.registration_number or "-" }}</strong>
+                        <div class="statement-subline">{{ item.rank or "-" }}</div>
+                    </td>
+                    <td>
+                        <span class="statement-pill statement-pill-{{ item.source_category|lower }}">{{ item.source_category }}</span>
+                        {% if item.paid_at %}
+                            <div class="statement-subline">Pago em {{ item.paid_at.strftime("%d/%m/%Y") }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.source_category == "Horas" %}
+                            <div class="statement-breakdown">
+                                <span>Total <b>{{ item.total_minutes|duration }}</b></span>
+                                <span>Obrigatorio <b>{{ ((item.total_minutes or 0) - (item.extra_minutes or 0))|duration }}</b></span>
+                                <span>Extra <b>{{ item.extra_minutes|duration }}</b></span>
+                            </div>
+                        {% else %}
+                            <div class="statement-breakdown">
+                                <span>Funcoes <b>{{ item.function_count or 0 }}</b></span>
+                                <span>Detalhe <b>{{ item.functions_label or "-" }}</b></span>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td class="statement-money-cell">
+                        <span>Bruto <b>{{ item.gross_amount|money }}</b></span>
+                        <span>Desc. <b>{{ item.deductions|money }}</b></span>
+                        <span>Liquido <b>{{ item.net_amount|money }}</b></span>
+                    </td>
+                    <td>
+                        <span class="statement-status statement-status-{{ item.status }}">{{ item.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<section class="card">
+    <p>Nenhum lancamento encontrado para os filtros selecionados.</p>
+</section>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Inscricao - DGP PMESP{% endblock %}
+{% block heading %}Inscricao no departamento{% endblock %}
+{% block content %}
+<form class="card form" method="post">
+    <label>Nome completo<input name="full_name" required></label>
+    <label>Matricula<input name="registration_number" required></label>
+    <label>Posto/Graduacao<input name="rank" required></label>
+    <label>Unidade<input name="unit" required></label>
+    <label>E-mail<input name="email" type="email"></label>
+    <label>Telefone<input name="phone"></label>
+    <label class="full">Justificativa<textarea name="motivation" required></textarea></label>
+    <button>Enviar inscricao</button>
+</form>
+{% endblock %}

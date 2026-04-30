@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Financeiro - DGP PMESP{% endblock %}
+{% block heading %}Financeiro{% endblock %}
+{% block content %}
+{% if saved %}<div class="alert">Pagamento salvo no banco.</div>{% endif %}
+{% if deleted %}<div class="alert">Pagamento excluido do financeiro.</div>{% endif %}
+{% if error == "payment" %}<div class="alert error">Preencha valores, detalhe, categoria e status antes de salvar.</div>{% endif %}
+
+<section class="hero">
+    <div>
+        <p>Dashboard financeiro</p>
+        <h2>Pagamentos importados do banco MySQL.</h2>
+    </div>
+    <strong>{{ metrics.total_amount|money }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Total</span><strong>{{ metrics.total_amount|money }}</strong><small>{{ metrics.payments_count }} registros</small></article>
+    <article><span>Horas</span><strong>{{ metrics.hourly_amount|money }}</strong><small>{{ metrics.hourly_count }} registros</small></article>
+    <article><span>Administrativo</span><strong>{{ metrics.administrative_amount|money }}</strong><small>{{ metrics.administrative_count }} registros</small></article>
+    <article><span>Horas extra</span><strong>{{ metrics.extra_minutes|duration }}</strong><small>{{ metrics.total_minutes|duration }} total</small></article>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head"><h2>Pagamentos</h2><a href="{{ url_for('relatorio_financeiro') }}">Gerar relatorio por setor</a></div>
+    <form class="filters" method="get">
+        <input name="q" value="{{ query }}" placeholder="Pesquisar por membro, posto, funcao ou categoria">
+        <select name="category">
+            <option value="">Todas as categorias</option>
+            <option value="Horas" {% if category == "Horas" %}selected{% endif %}>Horas</option>
+            <option value="Administrativo" {% if category == "Administrativo" %}selected{% endif %}>Administrativo</option>
+        </select>
+        <select name="sector">
+            <option value="">Todos os departamentos</option>
+            {% for sector in sectors %}
+                <option value="{{ sector.name }}" {% if selected_sector == sector.name %}selected{% endif %}>{{ sector.name }}</option>
+            {% endfor %}
+        </select>
+        <button>Pesquisar</button>
+        <a class="button" href="{{ url_for('financeiro') }}">Limpar</a>
+    </form>
+    <div class="table-wrap">
+        <table class="compact-table finance-table">
+            <thead>
+                <tr><th>Policial</th><th>Posto</th><th>Departamento</th><th>Origem</th><th>Detalhe</th><th>Bruto</th><th>Desc.</th><th>Liquido</th><th>Status</th><th>Obs.</th><th>Salvamento</th><th>Acao</th></tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>
+                        <form id="payment-{{ payment.id }}" class="autosave-form" data-status-target="payment-status-{{ payment.id }}" data-net-target="payment-net-{{ payment.id }}" method="post" action="{{ url_for('atualizar_pagamento', payment_id=payment.id) }}">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <input type="hidden" name="category_filter" value="{{ category }}">
+                            <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                            <strong>{{ payment.source_name or payment.full_name }}</strong>
+                            {% if payment.member_id %}
+                                <div class="finance-member-meta">Vinculado ao cadastro de membros</div>
+                            {% else %}
+                                <div class="finance-member-meta finance-member-meta-warn">Sem vinculo no cadastro</div>
+                            {% endif %}
+                        </form>
+                    </td>
+                    <td>{{ payment.rank }}</td>
+                    <td class="sector-col">
+                        {% if payment.source_category == "Administrativo" %}
+                            <select form="payment-{{ payment.id }}" name="department">
+                                <option value="">Sem departamento</option>
+                                {% for sector in sectors %}
+                                    <option value="{{ sector.name }}" {% if payment.department == sector.name %}selected{% endif %}>{{ sector.name }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            {{ payment.sector_names_label or "Sem setor" }}
+                            <input type="hidden" form="payment-{{ payment.id }}" name="department" value="">
+                        {% endif %}
+                    </td>
+                    <td class="select-col">
+                        <select form="payment-{{ payment.id }}" name="source_category" required>
+                            <option value="Horas" {% if payment.source_category == "Horas" %}selected{% endif %}>Horas</option>
+                            <option value="Administrativo" {% if payment.source_category == "Administrativo" %}selected{% endif %}>Administrativo</option>
+                        </select>
+                    </td>
+                    <td class="detail-editor">
+                        {% if payment.source_category == "Horas" %}
+                            <div class="mini-fields">
+                                <label>Total<input form="payment-{{ payment.id }}" name="total_minutes" value="{{ payment.total_minutes|duration }}"></label>
+                                <label>Extra<input form="payment-{{ payment.id }}" name="extra_minutes" value="{{ payment.extra_minutes|duration }}"></label>
+                            </div>
+                            <input type="hidden" form="payment-{{ payment.id }}" name="function_count" value="">
+                            <input type="hidden" form="payment-{{ payment.id }}" name="functions_label" value="">
+                        {% else %}
+                            <div class="mini-fields">
+                                <label>Qtd.<input form="payment-{{ payment.id }}" name="function_count" value="{{ payment.function_count or '' }}"></label>
+                                <label>Funcoes<input form="payment-{{ payment.id }}" name="functions_label" value="{{ payment.functions_label or '' }}"></label>
+                            </div>
+                            <input type="hidden" form="payment-{{ payment.id }}" name="total_minutes" value="">
+                            <input type="hidden" form="payment-{{ payment.id }}" name="extra_minutes" value="">
+                        {% endif %}
+                    </td>
+                    <td class="money-col"><input form="payment-{{ payment.id }}" name="gross_amount" value="{{ payment.gross_amount }}" required></td>
+                    <td class="money-col"><input form="payment-{{ payment.id }}" name="deductions" value="{{ payment.deductions }}" required></td>
+                    <td class="net-col"><strong id="payment-net-{{ payment.id }}">{{ payment.net_amount|money }}</strong></td>
+                    <td class="select-col">
+                        <select form="payment-{{ payment.id }}" name="status" required>
+                            <option value="pago" {% if payment.status == "pago" %}selected{% endif %}>pago</option>
+                            <option value="pendente" {% if payment.status == "pendente" %}selected{% endif %}>pendente</option>
+                            <option value="cancelado" {% if payment.status == "cancelado" %}selected{% endif %}>cancelado</option>
+                        </select>
+                    </td>
+                    <td class="notes-col"><input form="payment-{{ payment.id }}" name="notes" value="{{ payment.notes or '' }}"></td>
+                    <td><span id="payment-status-{{ payment.id }}" class="autosave-status">Salvo</span></td>
+                    <td class="action-col">
+                        <form method="post" action="{{ url_for('excluir_pagamento', payment_id=payment.id) }}" onsubmit="return confirm('Excluir este pagamento do financeiro?');">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <input type="hidden" name="category_filter" value="{{ category }}">
+                            <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+                            <button class="button button-danger button-small">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-head"><h2>Distribuicao por posto</h2></div>
+    <div class="list">
+        {% for row in rank_distribution %}
+            <div class="row">
+                <div><strong>{{ row.rank_name }}</strong><span>{{ row.total }} registros</span></div>
+                <b>{{ row.amount|money }}</b>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,163 @@
+# Pagamentos por Horas
+
+@T.Coronel Osvaldo - 72:44 (extra 52:44) - R$ 10.384.000
+
+@Capitão Nascimento - 29:28 (extra 9:28) - R$ 1.442.000
+
+@2.Tenente Castiel - 116:32 (extra 96:32) - R$ 14.701.000
+@1.Tenente Charles - 101:30 (extra 81:30) - R$ 12.414.000
+@1.Tenente J.Peixoto - 33:09 (extra 13:09) - R$ 2.003.000
+
+@S.Tenente Krauser - 36:13 (extra 16:13) - R$ 1.981.000
+@S.Tenente Frank - 29:06 (extra 9:06) - R$ 1.112.000
+@S.Tenente Moreira - 27:08 (extra 7:08) - R$ 871.000
+@S.Tenente PauloSds - 25:28 (extra 5:28) - R$ 668.000
+@S.Tenente Dvan - 23:29 (extra 3:29) - R$ 425.000
+
+@Aspirante Mussum - 75:21 (extra 55:21) - R$ 5.306.000
+@Aspirante Soares - 47:35 (extra 27:35) - R$ 2.644.000
+@Aspirante bonfim - 40:13 (extra 20:13) - R$ 1.938.000
+@Aspirante E. Silva - 30:51 (extra 10:51) - R$ 1.040.000
+@Aspirante Abrão - 30:43 (extra 10:43) - R$ 1.028.000
+@Aspirante Junior - 28:56 (extra 8:56) - R$ 856.000
+
+@3.Sargento icaroM. - 86:45 (extra 66:45) - R$ 5.829.000
+@3.Sargento CaioS. - 55:00 (extra 35:00) - R$ 3.056.000
+@3.Sargento Dos Anjos - 43:31 (extra 23:31) - R$ 2.053.000
+@3.Sargento Murilo - 41:52 (extra 21:52) - R$ 1.908.000
+@3.Sargento Gustavo - 25:25 (extra 5:25) - R$ 473.000
+@3.Sargento Guimaraes - 24:53 (extra 4:53) - R$ 426.000
+
+@2.Sargento Heitor - 204:43 (extra 184:43) - R$ 14.553.000
+@2.Sargento João - 70:51 (extra 50:51) - R$ 4.006.000
+
+@Cabo Conceição - 200:16 (extra 180:16) - R$ 11.836.000
+@Cabo Camuflado - 76:41 (extra 56:41) - R$ 3.721.000
+@Cabo Raul - 68:19 (extra 48:19) - R$ 3.172.000
+@Cabo Penha - 60:40 (extra 40:40) - R$ 2.670.000
+@Cabo Santos - 60:32 (extra 40:32) - R$ 2.661.000
+@Cabo Richard - 60:29 (extra 40:29) - R$ 2.658.000
+@Cabo Manel - 56:19 (extra 36:19) - R$ 2.385.000
+@Cabo Diego Dias - 41:55 (extra 21:55) - R$ 1.439.000
+@Cabo Pedro - 39:05 (extra 19:05) - R$ 1.253.000
+@Cabo Gabriel.L - 30:44 (extra 10:44) - R$ 705.000
+@Cabo Vinícius - 28:49 (extra 8:49) - R$ 579.000
+@Cabo Gennare - 27:12 (extra 7:12) - R$ 473.000
+@Cabo Pablo - 26:11 (extra 6:11) - R$ 406.000
+@Cabo Nobre - 16:37 - R$ 0
+@Cabo Barcellos - 15:29 - R$ 0
+@Cabo Bruno - 14:24 - R$ 0
+
+@Sd 1ª Cl Sykes - 229:31 (extra 209:31) - R$ 11.003.000
+@Sd 1ª Cl Perito - 144:05 (extra 124:05) - R$ 6.516.000
+@Sd 1ª Cl Kauã - 142:27 (extra 122:27) - R$ 6.431.000
+@Sd 1ª Cl nogueira - 127:54 (extra 107:54) - R$ 5.667.000
+@Sd 1ª Cl Eduardo - 127:39 (extra 107:39) - R$ 5.654.000
+@Sd 1ª Cl Cerqueira - 106:02 (extra 86:02) - R$ 4.519.000
+@Sd 1ª Cl Gustavo - 96:52 (extra 76:52) - R$ 4.037.000
+@Sd 1ª Cl Marcos Neves - 89:39 (extra 69:39) - R$ 3.658.000
+@Sd 1ª Cl ruan coringa - 88:58 (extra 68:58) - R$ 3.622.000
+@Sd 1ª Cl André - 85:58 (extra 65:58) - R$ 3.465.000
+@Sd 1ª Cl Abhay - 84:55 (extra 64:55) - R$ 3.410.000
+@Sd 1ª Cl Cunha - 83:34 (extra 63:34) - R$ 3.339.000
+@Sd 1ª Cl Ceará - 75:03 (extra 55:03) - R$ 2.891.000
+@Sd 1ª Cl Santos - 74:58 (extra 54:58) - R$ 2.887.000
+@Sd 1ª Cl Limaz - 74:36 (extra 54:36) - R$ 2.868.000
+@Sd 1ª Cl kevyn - 73:13 (extra 53:13) - R$ 2.795.000
+@Sd 1ª Cl lucas alves - 71:58 (extra 51:58) - R$ 2.729.000
+@Sd 1ª Cl Arcanjo - 71:03 (extra 51:03) - R$ 2.681.000
+@Sd 1ª Cl Delacruz - 70:42 (extra 50:42) - R$ 2.663.000
+@Sd 1ª Cl Gian Lopez - 68:26 (extra 48:26) - R$ 2.544.000
+@Sd 1ª Cl Nunes - 62:54 (extra 42:54) - R$ 2.253.000
+@Sd 1ª Cl Yamato - 61:30 (extra 41:30) - R$ 2.180.000
+@Sd 1ª Cl caua - 59:36 (extra 39:36) - R$ 2.080.000
+@Sd 1ª Cl Dias - 58:25 (extra 38:25) - R$ 2.018.000
+@Sd 1ª Cl bittenca - 57:17 (extra 37:17) - R$ 1.958.000
+@Sd 1ª Cl Netinho - 57:03 (extra 37:03) - R$ 1.946.000
+@Sd 1ª Cl Oliver - 56:13 (extra 36:13) - R$ 1.902.000
+@Sd 1ª Cl Drax - 55:42 (extra 35:42) - R$ 1.875.000
+@Sd 1ª Cl Vinicius - 53:33 (extra 33:33) - R$ 1.762.000
+@Sd 1ª Cl Nikki - 52:25 (extra 32:25) - R$ 1.703.000
+@Sd 1ª Cl davi - 52:04 (extra 32:04) - R$ 1.684.000
+@Sd 1ª Cl Viana - 49:11 (extra 29:11) - R$ 1.533.000
+@Sd 1ª Cl Teddy - 48:26 (extra 28:26) - R$ 1.493.000
+@Sd 1ª Cl Davi Souza - 47:22 (extra 27:22) - R$ 1.437.000
+@Sd 1ª Cl Miguel - 47:08 (extra 27:08) - R$ 1.425.000
+@Sd 1ª Cl Salieri - 46:33 (extra 26:33) - R$ 1.394.000
+@Sd 1ª Cl Danilo Cruz - 46:21 (extra 26:21) - R$ 1.384.000
+@Sd 1ª Cl Migas Almeid - 45:57 (extra 25:57) - R$ 1.363.000
+@Sd 1ª Cl Maite - 45:05 (extra 25:05) - R$ 1.317.000
+@Sd 1ª Cl Nicolas - 44:45 (extra 24:45) - R$ 1.300.000
+@Sd 1ª Cl Castro - 43:48 (extra 23:48) - R$ 1.250.000
+@Sd 1ª Cl Oliveira - 42:59 (extra 22:59) - R$ 1.207.000
+@Sd 1ª Cl Silvio Akrov - 42:52 (extra 22:52) - R$ 1.201.000
+@Sd 1ª Cl Guerra - 42:03 (extra 22:03) - R$ 1.158.000
+@Sd 1ª Cl Nico - 41:52 (extra 21:52) - R$ 1.149.000
+@Sd 1ª Cl gustavo - 41:44 (extra 21:44) - R$ 1.142.000
+@Sd 1ª Cl GhuttoSza - 41:18 (extra 21:18) - R$ 1.119.000
+@Sd 1ª Cl roben silva - 40:45 (extra 20:45) - R$ 1.090.000
+@Sd 1ª Cl nathan - 40:05 (extra 20:05) - R$ 1.055.000
+@Sd 1ª Cl Thalys - 39:03 (extra 19:03) - R$ 1.001.000
+@Sd 1ª Cl Nicolas Schu - 37:21 (extra 17:21) - R$ 911.000
+@Sd 1ª Cl Marcos Silva - 36:01 (extra 16:01) - R$ 841.000
+@Sd 1ª Cl iaguin - 35:28 (extra 15:28) - R$ 812.000
+@Sd 1ª Cl Thiago - 34:42 (extra 14:42) - R$ 772.000
+@Sd 1ª Cl Bruno Santos - 34:30 (extra 14:30) - R$ 762.000
+@Sd 1ª Cl Ruan - 33:10 (extra 13:10) - R$ 692.000
+@Sd 1ª Cl Mohamed - 30:14 (extra 10:14) - R$ 538.000
+@Sd 1ª Cl Guilherme - 29:26 (extra 9:26) - R$ 496.000
+@Sd 1ª Cl Nicolas - 29:25 (extra 9:25) - R$ 495.000
+@Sd 1ª Cl Santos - 27:53 (extra 7:53) - R$ 414.000
+@Sd 1ª Cl Rivera - 27:48 (extra 7:48) - R$ 410.000
+@Sd 1ª Cl Pedro - 26:30 (extra 6:30) - R$ 341.000
+@Sd 1ª Cl Bruno Karron - 25:10 (extra 5:10) - R$ 272.000
+@Sd 1ª Cl Andrade - 24:27 (extra 4:27) - R$ 234.000
+@Sd 1ª Cl Erick - 23:53 (extra 3:53) - R$ 204.000
+@Sd 1ª Cl Luqueta - 23:51 (extra 3:51) - R$ 202.000
+@Sd 1ª Cl Java - 23:40 (extra 3:40) - R$ 193.000
+@Sd 1ª Cl Yoshi - 22:44 (extra 2:44) - R$ 143.000
+@Sd 1ª Cl Yagami - 22:34 (extra 2:34) - R$ 135.000
+@Sd 1ª Cl Neves - 21:20 (extra 1:20) - R$ 70.000
+@Sd 1ª Cl Carvalho - 20:29 (extra 0:29) - R$ 25.000
+
+# Pagamentos por setores administrativos
+
+@1.Tenente Castiel - 3 funções (ESSD Instrutor + DGP + Coordenador Administrativo) - R$ 15.000.000
+@Cabo Raul - 2 funções (ESSD Auxiliar + DGP Supervisor Analytics) - R$ 10.000.000
+@2.Sargento João - 2 funções (Admin Geral + DGP) - R$ 10.000.000
+@Aspirante Thiago - 2 funções (Admin Geral + DGP) - R$ 10.000.000
+@Sd 1ª Cl Davi Souza - 2 funções (ESSD Instrutor + DGP) - R$ 10.000.000
+@Cabo Limaz - 2 funções (Administrativo + DGP) - R$ 10.000.000
+@Cabo Vinícius - 2 funções (DGP + Corregedoria) - R$ 10.000.000
+@1.Sargento Heitor - 2 funções (DGP + Corregedoria) - R$ 10.000.000
+
+@Aspirante Junior - 1 função (Diretor) - R$ 5.000.000
+@1.Tenente VitorW - 1 função (Coordenador Ensino) - R$ 5.000.000
+@3.Sargento Pentecost - 1 função (Coordenador ESSD) - R$ 5.000.000
+@Sd 1ª Cl Santos - 1 função (Administrativo) - R$ 5.000.000
+@T.Coronel Osvaldo - 1 função (Instrutor ESSD) - R$ 5.000.000
+@T.Coronel Machine - 1 função (Instrutor ESSD) - R$ 5.000.000
+@Sd 1ª Cl Netinho - 1 função (Instrutor ESSD) - R$ 5.000.000
+@Sd 1ª Cl Wellington - 1 função (Instrutor ESSD) - R$ 5.000.000
+@Coronel Sanches - 1 função (Instrutor ESSD) - R$ 5.000.000
+@Sd 1ª Cl Vinicius - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Perito - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Nunes - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Nogueira - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Nico - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Miguel - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Kauã - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Drax N - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Sd 1ª Cl Carvalho - 1 função (Auxiliar ESSD) - R$ 5.000.000
+@Aspirante Cristian - 1 função (Diretor DGP) - R$ 5.000.000
+@Aspirante Lopes - 1 função (Vice-Diretor DGP) - R$ 5.000.000
+@S.Tenente Dvan - 1 função (Membro DGP) - R$ 5.000.000
+@Cabo Gustavo - 1 função (Membro DGP) - R$ 5.000.000
+@Cabo Oliver - 1 função (Membro DGP) - R$ 5.000.000
+@J Peixoto - 1 função (Corregedor) - R$ 5.000.000
+@Nascimento - 1 função (Corregedor) - R$ 5.000.000
+@Santos - 1 função (Corregedor) - R$ 5.000.000
+@Sykes - 1 função (Corregedor) - R$ 5.000.000
+
+
+

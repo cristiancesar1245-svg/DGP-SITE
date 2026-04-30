@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Departamento de Gestão Pessoal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body class="login-body">
+    <main class="login-shell">
+        <section class="login-stage">
+            <div class="login-stage-art" aria-hidden="true">
+                <div class="login-stage-badge">
+                    <img src="{{ url_for('static', filename='images/logo_policiamilitar_high.png') }}" alt="Logo da PMESP">
+                    <span>Polícia Militar do Estado de São Paulo</span>
+                </div>
+                <div class="login-stage-copy">
+                    <p class="login-kicker">Policia Militar do Estado de Sao Paulo</p>
+                    <strong>Departamento de Gestao Pessoal</strong>
+                    <span>Acesso individual com credencial local e conta vinculada do Discord.</span>
+                </div>
+            </div>
+
+            <section class="login-auth-card" aria-labelledby="login-title">
+                <div class="login-auth-head">
+                    <img class="login-auth-logo" src="{{ url_for('static', filename='images/logo_policiamilitar_high.png') }}" alt="Logo da PMESP">
+                    <p class="login-auth-brand">Departamento de Gestão Pessoal</p>
+                    <h1 id="login-title">Acesso ao sistema</h1>
+                </div>
+
+                {% if error == "local_missing" %}
+                    <div class="alert error">Preencha usuario e senha.</div>
+                {% elif error == "local_invalid" %}
+                    <div class="alert error">Usuario ou senha invalidos.</div>
+                {% elif error == "pending" %}
+                    <div class="alert error">Seu usuario existe, mas ainda esta pendente de liberacao.</div>
+                {% elif error == "blocked" %}
+                    <div class="alert error">Seu acesso esta bloqueado.</div>
+                {% elif error == "state" %}
+                    <div class="alert error">A sessao de autenticacao expirou. Inicie o login novamente.</div>
+                {% elif error == "denied" %}
+                    <div class="alert error">O login no Discord foi cancelado.</div>
+                {% elif error == "missing_code" %}
+                    <div class="alert error">O Discord nao retornou o codigo de autenticacao.</div>
+                {% elif error == "oauth" %}
+                    <div class="alert error">
+                        Nao foi possivel concluir a autenticacao com o Discord.
+                        {% if error_detail %}<br><small>{{ error_detail }}</small>{% endif %}
+                    </div>
+                {% elif error == "config" %}
+                    <div class="alert error">O login pelo Discord ainda nao foi configurado.</div>
+                {% elif error == "not_allowed" %}
+                    <div class="alert error">Esta conta do Discord nao esta autorizada para entrar no sistema.</div>
+                {% endif %}
+
+                <form class="login-form" method="post" action="{{ url_for('login_password') }}">
+                    <input type="hidden" name="next" value="{{ next_target }}">
+                    <label>
+                        Login
+                        <input name="username" autocomplete="username" placeholder="Digite seu usuario" required>
+                    </label>
+                    <label>
+                        Senha
+                        <input name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+                    </label>
+                    <button class="login-submit">Entrar</button>
+                </form>
+
+                <div class="login-divider"><span>ou</span></div>
+
+                {% if discord_auth_enabled %}
+                    <a class="discord-login-button" href="{{ url_for('discord_login', next=next_target) }}">Continuar com Discord</a>
+                {% else %}
+                    <div class="login-disabled">
+                        <strong>Discord indisponivel</strong>
+                        <span>Enquanto isso, use o acesso local para entrar no sistema.</span>
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+    </main>
+</body>
+</html>

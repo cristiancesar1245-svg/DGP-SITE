@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}DGP PMESP{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body data-can-edit="{{ '1' if current_user_can_edit else '0' }}">
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="sidebar-shell">
+                <a class="brand" href="{{ url_for('dashboard') }}">
+                    <div class="brand-mark">
+                        <img src="{{ url_for('static', filename='images/logo_policiamilitar_high.png') }}" alt="Logo da PMESP">
+                    </div>
+                    <div class="brand-copy">
+                        <span>DGP PMESP</span>
+                        <strong>Policia Militar do Estado de Sao Paulo</strong>
+                        <p>Painel administrativo integrado</p>
+                    </div>
+                </a>
+                <nav class="sidebar-nav">
+                    <div class="sidebar-nav-group">
+                        <span class="sidebar-section-title">Operacao</span>
+                        <a class="sidebar-link {% if request.endpoint == 'dashboard' %}is-active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 19h16"></path>
+                                    <path d="M7 16V9"></path>
+                                    <path d="M12 16V5"></path>
+                                    <path d="M17 16v-4"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Dashboard</strong>
+                                <small>Visao geral</small>
+                            </span>
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'financeiro' %}is-active{% endif %}" href="{{ url_for('financeiro') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"></path>
+                                    <path d="M12 7v10"></path>
+                                    <path d="M9.2 9.5c.5-1 1.6-1.5 2.8-1.5 1.7 0 3 1 3 2.3 0 1.3-1.2 1.9-3 2.2-1.8.3-3 .9-3 2.2 0 1.3 1.3 2.3 3 2.3 1.2 0 2.3-.5 2.8-1.5"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Financeiro</strong>
+                                <small>Pagamentos</small>
+                            </span>
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'relatorio_financeiro' %}is-active{% endif %}" href="{{ url_for('relatorio_financeiro') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+                                    <path d="M14 3v5h5"></path>
+                                    <path d="M9 13h6"></path>
+                                    <path d="M9 17h6"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Relatorio financeiro</strong>
+                                <small>Consolidado</small>
+                            </span>
+                        </a>
+                    </div>
+
+                    <div class="sidebar-nav-group">
+                        <span class="sidebar-section-title">Cadastros</span>
+                        <a class="sidebar-link {% if request.endpoint == 'setores' %}is-active{% endif %}" href="{{ url_for('setores') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="5" width="16" height="15" rx="2"></rect>
+                                    <path d="M9 20V9"></path>
+                                    <path d="M9 13h11"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Setores</strong>
+                                <small>Estrutura</small>
+                            </span>
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'membros' %}is-active{% endif %}" href="{{ url_for('membros') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="9" cy="8" r="3"></circle>
+                                    <circle cx="16.5" cy="9.5" r="2.5"></circle>
+                                    <path d="M3.8 19.2c.4-2.7 2.5-4.2 5.2-4.2 2.8 0 4.8 1.5 5.2 4.2"></path>
+                                    <path d="M13.5 19.2c.3-1.8 1.6-2.9 3.5-2.9 1.8 0 3.1 1.1 3.4 2.9"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Membros</strong>
+                                <small>Efetivo</small>
+                            </span>
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'inscricoes' %}is-active{% endif %}" href="{{ url_for('inscricoes') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M8 6h11"></path>
+                                    <path d="M8 12h11"></path>
+                                    <path d="M8 18h11"></path>
+                                    <path d="M3 6h.01"></path>
+                                    <path d="M3 12h.01"></path>
+                                    <path d="M3 18h.01"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Inscricoes</strong>
+                                <small>Solicitacoes</small>
+                            </span>
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'inscricao' %}is-active{% endif %}" href="{{ url_for('inscricao') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 5v14"></path>
+                                    <path d="M5 12h14"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Nova inscricao</strong>
+                                <small>Formulario</small>
+                            </span>
+                        </a>
+                    </div>
+
+                    {% if current_user_can_manage_access or current_user_can_view_audit %}
+                    <div class="sidebar-nav-group">
+                        <span class="sidebar-section-title">Controle</span>
+                        {% if current_user_can_manage_access %}
+                        <a class="sidebar-link {% if request.endpoint == 'acessos' %}is-active{% endif %}" href="{{ url_for('acessos') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+                                    <path d="M8 10V8a4 4 0 0 1 8 0v2"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Acessos</strong>
+                                <small>Permissoes</small>
+                            </span>
+                        </a>
+                        {% endif %}
+                        {% if current_user_can_view_audit %}
+                        <a class="sidebar-link {% if request.endpoint == 'auditoria' %}is-active{% endif %}" href="{{ url_for('auditoria') }}">
+                            <span class="sidebar-link-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="7"></circle>
+                                    <path d="M21 21l-4.3-4.3"></path>
+                                    <path d="M11 8v3l2 2"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-link-copy">
+                                <strong>Auditoria</strong>
+                                <small>Movimentacoes</small>
+                            </span>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </nav>
+            </div>
+        </aside>
+        <main>
+            <img class="watermark" src="{{ url_for('static', filename='images/logo_policiamilitar_high.png') }}" alt="">
+            <header class="page-title">
+                <div class="page-title-copy">
+                    <p>DGP PMESP</p>
+                    <h1>{% block heading %}Painel{% endblock %}</h1>
+                </div>
+                {% if current_user %}
+                <div class="page-title-actions">
+                    <div class="topbar-user">
+                        {% if current_user.avatar_url %}
+                        <img id="sidebar-user-image" class="topbar-user-image" src="{{ current_user.avatar_url }}" alt="Avatar do usuario">
+                        {% else %}
+                        <div id="sidebar-user-avatar" class="topbar-user-avatar">{{ (current_user.display_name or current_user.username or "U")[:1]|upper }}</div>
+                        {% endif %}
+                        <div>
+                            <strong id="sidebar-user-name">{{ current_user.display_name or current_user.username }}</strong>
+                            <small id="sidebar-user-role">{{ current_user_role_label }}</small>
+                        </div>
+                    </div>
+                    <a class="topbar-logout" href="{{ url_for('logout') }}">Sair</a>
+                </div>
+                {% endif %}
+            </header>
+            {% block content %}{% endblock %}
+            <footer>Policia Militar do Estado de Sao Paulo <strong>Lealdade e Constancia</strong></footer>
+        </main>
+    </div>
+    {% block scripts %}{% endblock %}
+    <script>
+    (() => {
+        const canEdit = document.body.dataset.canEdit !== "0";
+        const timers = new WeakMap();
+        const pendingForms = new Set();
+        const savingForms = new Set();
+        const liveSyncUrl = "{{ url_for('live_revision') }}";
+        const sidebarUserName = document.getElementById("sidebar-user-name");
+        const sidebarUserRole = document.getElementById("sidebar-user-role");
+        const sidebarUserAvatar = document.getElementById("sidebar-user-avatar");
+        let liveRevision = null;
+        let liveReloadPending = false;
+        let liveReloadStarted = false;
+        let suppressReloadUntil = Date.now() + 2500;
+
+        async function fetchLiveRevision() {
+            const response = await fetch(`${liveSyncUrl}?ts=${Date.now()}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store",
+            });
+
+            if (!response.ok) {
+                throw new Error("live revision failed");
+            }
+
+            const data = await response.json().catch(() => ({}));
+            return data.revision || "0";
+        }
+
+        function isInteractiveField(field) {
+            if (!field) {
+                return false;
+            }
+            if (field.matches("input, textarea, select")) {
+                return !field.disabled && !field.readOnly;
+            }
+            return Boolean(field.closest("input, textarea, select"));
+        }
+
+        function canReloadNow() {
+            if (document.visibilityState !== "visible") {
+                return false;
+            }
+            if (Date.now() < suppressReloadUntil) {
+                return false;
+            }
+            if (pendingForms.size || savingForms.size) {
+                return false;
+            }
+            return !isInteractiveField(document.activeElement);
+        }
+
+        function startLiveReload() {
+            if (liveReloadStarted) {
+                return;
+            }
+            liveReloadStarted = true;
+            window.setTimeout(() => window.location.reload(), 450);
+        }
+
+        function syncSessionActive(user) {
+            if (!user) {
+                return;
+            }
+
+            if (sidebarUserName && user.display_name) {
+                sidebarUserName.textContent = user.display_name;
+            }
+            if (sidebarUserRole && user.role_label) {
+                sidebarUserRole.textContent = user.role_label;
+            }
+            if (sidebarUserAvatar) {
+                const seed = user.display_name || user.username || "U";
+                sidebarUserAvatar.textContent = String(seed).slice(0, 1).toUpperCase();
+            }
+        }
+
+        function syncAccessRowPreview(form, record) {
+            if (!record) {
+                return;
+            }
+
+            const row = form.closest("tr");
+            if (!row) {
+                return;
+            }
+
+            const title = row.querySelector("td strong");
+            if (title && record.display_name) {
+                title.textContent = record.display_name;
+            }
+        }
+
+        async function refreshLiveRevisionBaseline() {
+            try {
+                liveRevision = await fetchLiveRevision();
+            } catch (error) {
+                return;
+            }
+        }
+
+        async function pollLiveRevision() {
+            if (liveReloadStarted || document.visibilityState === "hidden") {
+                return;
+            }
+
+            if (liveReloadPending && canReloadNow()) {
+                startLiveReload();
+                return;
+            }
+
+            try {
+                const nextRevision = await fetchLiveRevision();
+                if (liveRevision === null) {
+                    liveRevision = nextRevision;
+                    return;
+                }
+
+                if (nextRevision !== liveRevision) {
+                    liveRevision = nextRevision;
+                    if (canReloadNow()) {
+                        startLiveReload();
+                        return;
+                    }
+                    liveReloadPending = true;
+                    return;
+                }
+
+                if (liveReloadPending && canReloadNow()) {
+                    startLiveReload();
+                    return;
+                }
+            } catch (error) {
+                return;
+            }
+        }
+
+        function initLiveSync() {
+            refreshLiveRevisionBaseline();
+            window.setInterval(pollLiveRevision, 4000);
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") {
+                    pollLiveRevision();
+                }
+            });
+            window.addEventListener("focus", pollLiveRevision);
+        }
+
+        function lockReadOnlyPostForms() {
+            document.querySelectorAll('form[method="post"]').forEach((form) => {
+                const controls = new Set([
+                    ...Array.from(form.elements || []),
+                    ...(form.id ? Array.from(document.querySelectorAll(`[form="${form.id}"]`)) : []),
+                ]);
+
+                controls.forEach((field) => {
+                    if (!field || field.type === "hidden") {
+                        return;
+                    }
+                    field.disabled = true;
+                    field.dataset.readonlyLocked = "1";
+                });
+            });
+        }
+
+        if (!canEdit) {
+            lockReadOnlyPostForms();
+            initLiveSync();
+            return;
+        }
+
+        function setStatus(form, text, state) {
+            const target = document.getElementById(form.dataset.statusTarget);
+            if (!target) {
+                return;
+            }
+            target.textContent = text;
+            target.dataset.state = state;
+        }
+
+        async function saveForm(form) {
+            pendingForms.delete(form);
+            savingForms.add(form);
+            setStatus(form, "Salvando", "saving");
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                });
+
+                if (!response.ok) {
+                    throw new Error("save failed");
+                }
+
+                const data = await response.json().catch(() => ({}));
+                if (data.net_amount && form.dataset.netTarget) {
+                    const netTarget = document.getElementById(form.dataset.netTarget);
+                    if (netTarget) {
+                        netTarget.textContent = data.net_amount;
+                    }
+                }
+                if (data.sectors) {
+                    syncSectorSummary(form, data.sectors);
+                }
+                if (data.record) {
+                    syncAccessRowPreview(form, data.record);
+                }
+                if (data.current_user) {
+                    syncSessionActive(data.current_user);
+                }
+
+                const statusField = form.elements.namedItem("status")
+                    || document.querySelector(`[form="${form.id}"][name="status"]`);
+                if (statusField) {
+                    const nextStatus = statusField.value;
+                    const row = form.closest("tr");
+                    if (row) {
+                        row.classList.remove("payment-row-pendente", "payment-row-pago", "payment-row-cancelado");
+                        row.classList.add(`payment-row-${nextStatus}`);
+                    }
+                    if (form.dataset.currentStatus && form.dataset.currentStatus !== nextStatus) {
+                        form.dataset.currentStatus = nextStatus;
+                        suppressReloadUntil = Date.now() + 5000;
+                        await refreshLiveRevisionBaseline();
+                        window.location.reload();
+                        return;
+                    }
+                    form.dataset.currentStatus = nextStatus;
+                }
+
+                if (form.dataset.clearPasswordOnSave === "1") {
+                    const passwordFields = new Set([
+                        ...Array.from(form.querySelectorAll('input[type="password"]')),
+                        ...(form.id ? Array.from(document.querySelectorAll(`[form="${form.id}"][type="password"]`)) : []),
+                    ]);
+                    passwordFields.forEach((field) => {
+                        field.value = "";
+                    });
+                }
+
+                suppressReloadUntil = Date.now() + 5000;
+                liveReloadPending = false;
+                await refreshLiveRevisionBaseline();
+                setStatus(form, "Salvo", "saved");
+            } catch (error) {
+                suppressReloadUntil = Date.now() + 2500;
+                setStatus(form, "Erro", "error");
+            } finally {
+                savingForms.delete(form);
+            }
+        }
+
+        function queueSave(form, wait) {
+            window.clearTimeout(timers.get(form));
+            pendingForms.add(form);
+            timers.set(form, window.setTimeout(() => saveForm(form), wait));
+        }
+
+        function parseSectors(value) {
+            if (!value) {
+                return [];
+            }
+            return value.split("||").filter(Boolean);
+        }
+
+        function updateSectorCard(sectorName, delta) {
+            const card = document.querySelector(`[data-sector-card="${CSS.escape(sectorName)}"]`);
+            if (!card) {
+                return;
+            }
+            const count = card.querySelector("[data-sector-count]");
+            if (!count) {
+                return;
+            }
+            const nextTotal = Math.max(0, Number.parseInt(count.textContent, 10) + delta);
+            count.textContent = String(nextTotal);
+        }
+
+        function syncSectorSummary(form, sectors) {
+            if (!form.dataset.syncSectors) {
+                return;
+            }
+
+            const previous = parseSectors(form.dataset.currentSectors);
+            const current = Array.isArray(sectors) ? sectors : [];
+            const previousSet = new Set(previous);
+            const currentSet = new Set(current);
+
+            previous.forEach((sectorName) => {
+                if (!currentSet.has(sectorName)) {
+                    updateSectorCard(sectorName, -1);
+                }
+            });
+            current.forEach((sectorName) => {
+                if (!previousSet.has(sectorName)) {
+                    updateSectorCard(sectorName, 1);
+                }
+            });
+
+            form.dataset.currentSectors = current.join("||");
+        }
+
+        document.querySelectorAll(".autosave-form").forEach((form) => {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                saveForm(form);
+            });
+
+            const controls = new Set([
+                ...Array.from(form.elements),
+                ...Array.from(document.querySelectorAll(`[form="${form.id}"]`)),
+            ]);
+
+            controls.forEach((field) => {
+                if (field.type === "hidden") {
+                    return;
+                }
+
+                if (field.type === "password") {
+                    field.addEventListener("change", () => queueSave(form, 80));
+                    field.addEventListener("blur", () => {
+                        if (field.value) {
+                            queueSave(form, 80);
+                        }
+                    });
+                    return;
+                }
+
+                if (field.type === "checkbox" || field.tagName === "SELECT") {
+                    field.addEventListener("change", () => queueSave(form, 80));
+                    return;
+                }
+
+                field.addEventListener("input", () => queueSave(form, 700));
+                field.addEventListener("change", () => queueSave(form, 80));
+            });
+        });
+
+        initLiveSync();
+    })();
+    </script>
+</body>
+</html>

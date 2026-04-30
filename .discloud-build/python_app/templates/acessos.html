@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Acessos - DGP PMESP{% endblock %}
+{% block heading %}Acessos{% endblock %}
+{% block content %}
+{% if saved == "created" %}
+<div class="alert">Usuario local criado no sistema.</div>
+{% elif saved %}
+<div class="alert">Acesso atualizado no sistema.</div>
+{% endif %}
+{% if error == "missing" %}<div class="alert error">Preencha nome, usuario, senha, perfil e status.</div>{% endif %}
+{% if error == "duplicate" %}<div class="alert error">Esse usuario local ja existe.</div>{% endif %}
+
+<section class="hero">
+    <div>
+        <p>Controle de usuarios</p>
+        <h2>Libere, bloqueie e organize o acesso individual por usuario, senha e Discord.</h2>
+    </div>
+    <strong>{{ metrics.total_users or 0 }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Total</span><strong>{{ metrics.total_users or 0 }}</strong><small>usuarios cadastrados</small></article>
+    <article><span>Ativos</span><strong>{{ metrics.active_users or 0 }}</strong><small>com acesso liberado</small></article>
+    <article><span>Pendentes</span><strong>{{ metrics.pending_users or 0 }}</strong><small>aguardando aprovacao</small></article>
+    <article><span>Bloqueados</span><strong>{{ metrics.blocked_users or 0 }}</strong><small>sem acesso</small></article>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head">
+        <h2>Novo usuario local</h2>
+    </div>
+    <form class="access-create-form" method="post" action="{{ url_for('criar_acesso') }}">
+        <label>Nome no sistema<input name="display_name" required></label>
+        <label>Usuario<input name="login_username" required></label>
+        <label>Senha<input name="password" type="password" required></label>
+        <label>
+            Perfil
+            <select name="role" required>
+                <option value="usuario">usuario</option>
+                <option value="administrador">administrador</option>
+            </select>
+        </label>
+        <label>
+            Status
+            <select name="status" required>
+                <option value="ativo">ativo</option>
+                <option value="pendente">pendente</option>
+                <option value="bloqueado">bloqueado</option>
+            </select>
+        </label>
+        <label class="full">Observacao<input name="notes"></label>
+        <button>Criar usuario</button>
+    </form>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head">
+        <h2>Usuarios do sistema</h2>
+    </div>
+    <div class="table-wrap">
+        <table class="compact-table access-table">
+            <thead>
+                <tr><th>Conta</th><th>Nome no sistema</th><th>Usuario local</th><th>Nova senha</th><th>Perfil</th><th>Status</th><th>Observacao</th><th>Ultimo login</th><th>Salvar</th></tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <form id="access-{{ user.id }}" method="post" action="{{ url_for('atualizar_acesso', user_id=user.id) }}">
+                            <strong>{{ user.display_name }}</strong>
+                            {% if user.discord_username %}
+                                <div class="access-subtext">Discord: @{{ user.discord_username }}</div>
+                            {% endif %}
+                            {% if user.discord_id %}
+                                <div class="access-subtext">{{ user.discord_id }}</div>
+                            {% endif %}
+                        </form>
+                    </td>
+                    <td><input form="access-{{ user.id }}" name="display_name" value="{{ user.display_name }}" required></td>
+                    <td><input form="access-{{ user.id }}" name="login_username" value="{{ user.login_username or '' }}" placeholder="usuario"></td>
+                    <td><input form="access-{{ user.id }}" name="new_password" type="password" placeholder="deixe em branco para manter"></td>
+                    <td>
+                        <select form="access-{{ user.id }}" name="role" required>
+                            <option value="administrador" {% if user.role == "administrador" %}selected{% endif %}>administrador</option>
+                            <option value="usuario" {% if user.role == "usuario" %}selected{% endif %}>usuario</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select form="access-{{ user.id }}" name="status" required>
+                            <option value="ativo" {% if user.status == "ativo" %}selected{% endif %}>ativo</option>
+                            <option value="pendente" {% if user.status == "pendente" %}selected{% endif %}>pendente</option>
+                            <option value="bloqueado" {% if user.status == "bloqueado" %}selected{% endif %}>bloqueado</option>
+                        </select>
+                    </td>
+                    <td><input form="access-{{ user.id }}" name="notes" value="{{ user.notes or '' }}"></td>
+                    <td>{{ user.last_login_at or "-" }}</td>
+                    <td><button form="access-{{ user.id }}">Salvar</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Analytics - DGP PMESP{% endblock %}
+{% block heading %}Analytics{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p>Centro de controle</p>
+        <h2>Gestao de pessoal, financeiro e inscricoes em uma base Python leve.</h2>
+    </div>
+    <strong>{{ metrics.total_amount|money }}</strong>
+</section>
+
+<section class="kpis">
+    <article><span>Membros</span><strong>{{ metrics.members_count }}</strong><small>Registros no banco</small></article>
+    <article><span>Pagamentos</span><strong>{{ metrics.payments_count }}</strong><small>{{ metrics.hourly_count }} por horas</small></article>
+    <article><span>Administrativo</span><strong>{{ metrics.administrative_count }}</strong><small>{{ metrics.administrative_amount|money }}</small></article>
+    <article><span>Horas extras</span><strong>{{ metrics.extra_minutes|duration }}</strong><small>{{ metrics.hourly_amount|money }}</small></article>
+</section>
+
+<section class="grid two">
+    <div class="card">
+        <div class="card-head"><h2>Maiores pagamentos</h2><a href="{{ url_for('financeiro') }}">Abrir financeiro</a></div>
+        <div class="list">
+            {% for payment in top_payments %}
+                <div class="row">
+                    <div><strong>{{ payment.source_name }}</strong><span>{{ payment.source_category }} | {{ payment.rank }}</span></div>
+                    <b>{{ payment.net_amount|money }}</b>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-head"><h2>Membros recentes</h2><a href="{{ url_for('membros') }}">Ver membros</a></div>
+        <div class="list">
+            {% for member in recent_members %}
+                <div class="row">
+                    <div><strong>{{ member.full_name }}</strong><span>{{ member.rank }} | {{ member.role }}</span></div>
+                    <b>{{ member.status }}</b>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
