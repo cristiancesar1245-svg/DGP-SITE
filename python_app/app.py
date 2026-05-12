@@ -59,6 +59,26 @@ def load_env_file(path: str) -> None:
 
 load_env_file(os.path.join(BASE_DIR, ".env"))
 
+def normalized_session_cookie_samesite() -> str:
+    raw_value = os.getenv("DGP_SESSION_COOKIE_SAMESITE", "Lax").strip().lower()
+    if raw_value == "none":
+        return "None"
+    if raw_value == "strict":
+        return "Strict"
+    return "Lax"
+
+
+def inferred_cookie_domain() -> str | None:
+    explicit_domain = os.getenv("DGP_SESSION_COOKIE_DOMAIN", "").strip()
+    if explicit_domain:
+        return explicit_domain
+    public_base_url = os.getenv("DGP_PUBLIC_BASE_URL", "").strip()
+    if not public_base_url:
+        return None
+    parsed = urlparse(public_base_url)
+    return parsed.hostname
+
+
 app = Flask(__name__)
 app.config.update(
     DB_HOST=os.getenv("DGP_DB_HOST", "127.0.0.1"),
@@ -70,7 +90,8 @@ app.config.update(
     SECRET_KEY=os.getenv("DGP_SECRET_KEY", "dgp-dev-secret-change-me"),
     PERMANENT_SESSION_LIFETIME=timedelta(hours=int(os.getenv("DGP_SESSION_HOURS", "12"))),
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SAMESITE=normalized_session_cookie_samesite(),
+    SESSION_COOKIE_DOMAIN=inferred_cookie_domain(),
     DISCORD_CLIENT_ID=os.getenv("DGP_DISCORD_CLIENT_ID", "").strip(),
     DISCORD_CLIENT_SECRET=os.getenv("DGP_DISCORD_CLIENT_SECRET", "").strip(),
     DISCORD_REDIRECT_URI=os.getenv("DGP_DISCORD_REDIRECT_URI", "").strip(),
