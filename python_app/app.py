@@ -2636,8 +2636,6 @@ def live_revision():
 
 @app.get("/")
 def home():
-    if current_auth_user():
-        return redirect(url_for("dashboard"))
     return redirect(url_for("login"))
 
 
