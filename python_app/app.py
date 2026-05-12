@@ -1145,6 +1145,7 @@ def enforce_public_base_url():
 @app.before_request
 def require_app_login():
     public_endpoints = {
+        "home",
         "login",
         "login_password",
         "discord_login",
@@ -2633,6 +2634,13 @@ def live_revision():
 
 
 @app.get("/")
+def home():
+    if current_auth_user():
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
+
+
+@app.get("/dashboard")
 def dashboard():
     metrics = dashboard_metrics()
     top_payments = fetch_all(
