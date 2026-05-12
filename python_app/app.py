@@ -102,6 +102,7 @@ app.config.update(
     LOCAL_ADMIN_PASSWORD=os.getenv("DGP_LOCAL_ADMIN_PASSWORD", "admin123").strip() or "admin123",
     DEV_RELOAD=os.getenv("DGP_DEV_RELOAD", "0").strip() == "1",
     TRUST_PROXY=os.getenv("DGP_TRUST_PROXY", "1").strip() != "0",
+    ENFORCE_PUBLIC_BASE_URL=os.getenv("DGP_ENFORCE_PUBLIC_BASE_URL", "0").strip() == "1",
     SESSION_COOKIE_SECURE=os.getenv("DGP_SESSION_COOKIE_SECURE", "0").strip() == "1",
     PREFERRED_URL_SCHEME=os.getenv("DGP_PREFERRED_URL_SCHEME", "https"),
 )
@@ -1146,6 +1147,9 @@ def record_request_audit(response: Response) -> Response:
 
 @app.before_request
 def enforce_public_base_url():
+    if not app.config["ENFORCE_PUBLIC_BASE_URL"]:
+        return None
+
     public_base_url = app.config["PUBLIC_BASE_URL"]
     if not public_base_url:
         return None
