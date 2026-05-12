@@ -82,6 +82,7 @@ app.config.update(
     DEV_RELOAD=os.getenv("DGP_DEV_RELOAD", "0").strip() == "1",
     TRUST_PROXY=os.getenv("DGP_TRUST_PROXY", "1").strip() != "0",
     SESSION_COOKIE_SECURE=os.getenv("DGP_SESSION_COOKIE_SECURE", "0").strip() == "1",
+    PREFERRED_URL_SCHEME=os.getenv("DGP_PREFERRED_URL_SCHEME", "https"),
 )
 app.config["TEMPLATES_AUTO_RELOAD"] = app.config["DEV_RELOAD"]
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0 if app.config["DEV_RELOAD"] else None
