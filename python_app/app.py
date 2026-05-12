@@ -1151,15 +1151,18 @@ def enforce_public_base_url():
         return None
 
     parsed_public_base = urlparse(public_base_url)
+    forwarded_proto = (request.headers.get("X-Forwarded-Proto", "") or "").split(",")[0].strip().lower()
+    forwarded_host = (request.headers.get("X-Forwarded-Host", "") or "").split(",")[0].strip().lower()
     public_scheme = (parsed_public_base.scheme or request.scheme).lower()
     public_host = (parsed_public_base.hostname or "").lower()
-    current_scheme = request.scheme.lower()
-    current_host = (request.host.split(":", 1)[0] or "").lower()
+    current_scheme = forwarded_proto or request.scheme.lower()
+    current_host = (
+        (forwarded_host.split(":", 1)[0] if forwarded_host else request.host.split(":", 1)[0]) or ""
+    ).lower()
     if not public_host:
         return None
 
-    # Evita loop de redirect quando proxy/host apresentam variacoes de porta
-    # (ex.: host com :443) mas o destino canonico ja e o mesmo.
+    # Evita loop de redirect quando a URL ja e canonica.
     if current_scheme == public_scheme and current_host == public_host:
         return None
 
