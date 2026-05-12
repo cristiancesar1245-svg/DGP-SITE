@@ -70,13 +70,7 @@ def normalized_session_cookie_samesite() -> str:
 
 def inferred_cookie_domain() -> str | None:
     explicit_domain = os.getenv("DGP_SESSION_COOKIE_DOMAIN", "").strip()
-    if explicit_domain:
-        return explicit_domain
-    public_base_url = os.getenv("DGP_PUBLIC_BASE_URL", "").strip()
-    if not public_base_url:
-        return None
-    parsed = urlparse(public_base_url)
-    return parsed.hostname
+    return explicit_domain or None
 
 
 app = Flask(__name__)
@@ -1147,34 +1141,9 @@ def record_request_audit(response: Response) -> Response:
 
 @app.before_request
 def enforce_public_base_url():
-    if not app.config["ENFORCE_PUBLIC_BASE_URL"]:
-        return None
-
-    public_base_url = app.config["PUBLIC_BASE_URL"]
-    if not public_base_url:
-        return None
-
-    parsed_public_base = urlparse(public_base_url)
-    forwarded_proto = (request.headers.get("X-Forwarded-Proto", "") or "").split(",")[0].strip().lower()
-    forwarded_host = (request.headers.get("X-Forwarded-Host", "") or "").split(",")[0].strip().lower()
-    public_scheme = (parsed_public_base.scheme or request.scheme).lower()
-    public_host = (parsed_public_base.hostname or "").lower()
-    current_scheme = forwarded_proto or request.scheme.lower()
-    current_host = (
-        (forwarded_host.split(":", 1)[0] if forwarded_host else request.host.split(":", 1)[0]) or ""
-    ).lower()
-    if not public_host:
-        return None
-
-    # Evita loop de redirect quando a URL ja e canonica.
-    if current_scheme == public_scheme and current_host == public_host:
-        return None
-
-    destination = f"{public_base_url}{request.full_path.rstrip('?') or request.path}"
-    if destination.rstrip("/") == request.url.rstrip("/"):
-        return None
-    redirect_code = 302 if request.method in {"GET", "HEAD", "OPTIONS"} else 307
-    return redirect(destination, code=redirect_code)
+    # Canonicalizacao de dominio/HTTPS fica no Nginx. Fazer isso tambem no
+    # Flask atras do proxy pode criar loop de redirect em /login e callbacks.
+    return None
 
 
 @app.before_request
