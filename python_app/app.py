@@ -1151,15 +1151,21 @@ def enforce_public_base_url():
         return None
 
     parsed_public_base = urlparse(public_base_url)
+    public_scheme = (parsed_public_base.scheme or request.scheme).lower()
+    public_host = (parsed_public_base.hostname or "").lower()
     current_scheme = request.scheme.lower()
-    current_host = request.host.lower()
-    public_scheme = (parsed_public_base.scheme or current_scheme).lower()
-    public_host = parsed_public_base.netloc.lower()
+    current_host = (request.host.split(":", 1)[0] or "").lower()
+    if not public_host:
+        return None
 
-    if not public_host or (current_scheme == public_scheme and current_host == public_host):
+    # Evita loop de redirect quando proxy/host apresentam variacoes de porta
+    # (ex.: host com :443) mas o destino canonico ja e o mesmo.
+    if current_scheme == public_scheme and current_host == public_host:
         return None
 
     destination = f"{public_base_url}{request.full_path.rstrip('?') or request.path}"
+    if destination.rstrip("/") == request.url.rstrip("/"):
+        return None
     redirect_code = 302 if request.method in {"GET", "HEAD", "OPTIONS"} else 307
     return redirect(destination, code=redirect_code)
 
