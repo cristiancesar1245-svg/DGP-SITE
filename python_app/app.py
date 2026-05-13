@@ -271,7 +271,20 @@ def safe_redirect_target(target: str | None) -> str:
         return url_for("dashboard")
     if not target.startswith("/"):
         return url_for("dashboard")
+    normalized_path = parsed.path.rstrip("/") or "/"
+    if normalized_path in {"/", "/login", "/login/discord", "/auth/discord/callback", "/logout"}:
+        return url_for("dashboard")
     return target
+
+
+def render_login_page(error: str | None = None, next_target: str | None = None, error_detail: str = "") -> str:
+    return render_template(
+        "login.html",
+        next_target=safe_redirect_target(next_target or request.args.get("next")),
+        error=error if error is not None else request.args.get("error"),
+        error_detail=error_detail or request.args.get("detail", "").strip(),
+        local_admin_user=app.config["LOCAL_ADMIN_USER"],
+    )
 
 
 def exchange_discord_code(code: str) -> dict:
@@ -2028,13 +2041,7 @@ def login():
             return redirect(url_for("dashboard"))
         session.clear()
 
-    return render_template(
-        "login.html",
-        next_target=safe_redirect_target(request.args.get("next")),
-        error=request.args.get("error"),
-        error_detail=request.args.get("detail", "").strip(),
-        local_admin_user=app.config["LOCAL_ADMIN_USER"],
-    )
+    return render_login_page()
 
 
 @app.post("/login")
@@ -2051,7 +2058,7 @@ def login_password():
             target_label=username or "sem_usuario",
             details={"motivo": "credenciais_ausentes", "next": next_target},
         )
-        return redirect(url_for("login", next=next_target, error="local_missing"))
+        return render_login_page(error="local_missing", next_target=next_target), 400
 
     system_user = access_user_for_login_username(username)
     if not system_user or not system_user.get("password_hash"):
@@ -2062,7 +2069,7 @@ def login_password():
             target_label=username,
             details={"motivo": "usuario_invalido", "next": next_target},
         )
-        return redirect(url_for("login", next=next_target, error="local_invalid"))
+        return render_login_page(error="local_invalid", next_target=next_target), 401
 
     if not check_password_hash(system_user["password_hash"], password):
         log_audit_event(
@@ -2073,7 +2080,7 @@ def login_password():
             target_label=username,
             details={"motivo": "senha_invalida", "next": next_target},
         )
-        return redirect(url_for("login", next=next_target, error="local_invalid"))
+        return render_login_page(error="local_invalid", next_target=next_target), 401
 
     if system_user.get("status") != "ativo":
         error_code = "pending" if system_user.get("status") == "pendente" else "blocked"
@@ -2085,7 +2092,7 @@ def login_password():
             target_label=username,
             details={"motivo": error_code, "next": next_target},
         )
-        return redirect(url_for("login", next=next_target, error=error_code))
+        return render_login_page(error=error_code, next_target=next_target), 403
 
     execute(
         """
