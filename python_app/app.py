@@ -104,6 +104,16 @@ app.config["TEMPLATES_AUTO_RELOAD"] = app.config["DEV_RELOAD"]
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0 if app.config["DEV_RELOAD"] else None
 if app.config["TRUST_PROXY"]:
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
+static_version = os.getenv("DGP_STATIC_VERSION", "").strip()
+if not static_version:
+    css_path = os.path.join(BASE_DIR, "python_app", "static", "app.css")
+    try:
+        static_version = str(int(os.path.getmtime(css_path)))
+    except OSError:
+        static_version = "1"
+app.config["STATIC_ASSET_VERSION"] = static_version
+
 AUTH_SCHEMA_READY = False
 AUDIT_SCHEMA_READY = False
 SENSITIVE_AUDIT_FIELDS = {
@@ -1104,6 +1114,7 @@ def log_audit_event(
 def inject_auth_context() -> dict:
     current_user = current_auth_user()
     return {
+        "static_asset_version": app.config.get("STATIC_ASSET_VERSION", "1"),
         "discord_auth_enabled": discord_auth_enabled(),
         "current_user": current_user,
         "current_user_is_admin": current_user_is_admin(),
