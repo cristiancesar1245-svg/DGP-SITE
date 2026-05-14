@@ -1406,6 +1406,33 @@ def allowed_reference_month_keys() -> list[str]:
     return [f"2026-{month:02d}" for month in range(3, 13)]
 
 
+def normalize_backup_rank(raw_rank: str | None) -> str:
+    raw = (raw_rank or "").strip()
+    if not raw:
+        return "Outros"
+
+    text = unicodedata.normalize("NFKD", raw)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    key = re.sub(r"\s+", " ", text).strip()
+    mapping = {
+        "t coronel": "T.Coronel",
+        "coronel": "Coronel",
+        "major": "Major",
+        "capitao": "Capitao",
+        "2 tenente": "2.Tenente",
+        "1 tenente": "1.Tenente",
+        "s tenente": "S.Tenente",
+        "aspirante": "Aspirante",
+        "1 sargento": "1.Sargento",
+        "2 sargento": "2.Sargento",
+        "3 sargento": "3.Sargento",
+        "cabo": "Cabo",
+        "sd 1a cl": "Sd 1a Cl",
+    }
+    return mapping.get(key, raw)
+
+
 def rank_from_name(name: str) -> str:
     lower = (name or "").lower()
     rank_rules = [
@@ -4187,6 +4214,132 @@ def acoplar_membros():
         },
     )
     return redirect(url_for("membros", q=query, sector=selected_sector, saved="manual_merged"))
+
+
+@app.post("/membros/importar-registros")
+def importar_registros_membros():
+    denied = require_write_access()
+    if denied:
+        return denied
+
+    query = request.form.get("q", "").strip()
+    selected_sector = request.form.get("sector_filter", "").strip()
+    backup_json = request.form.get("backup_json", "").strip()
+    if not backup_json:
+        return redirect(url_for("membros", q=query, sector=selected_sector, error="import_missing"))
+
+    try:
+        payload = json.loads(backup_json)
+    except json.JSONDecodeError:
+        return redirect(url_for("membros", q=query, sector=selected_sector, error="import_invalid"))
+
+    if not isinstance(payload, list):
+        return redirect(url_for("membros", q=query, sector=selected_sector, error="import_invalid"))
+
+    incoming_by_rg: dict[str, dict] = {}
+    skipped_invalid = 0
+    for item in payload:
+        if not isinstance(item, dict):
+            skipped_invalid += 1
+            continue
+        rg = str(item.get("rg") or "").strip()
+        nome = str(item.get("nome") or "").strip()
+        if not rg or not nome:
+            skipped_invalid += 1
+            continue
+        incoming_by_rg[rg] = {
+            "full_name": nome,
+            "rank": normalize_backup_rank(item.get("patente")),
+        }
+
+    if not incoming_by_rg:
+        return redirect(url_for("membros", q=query, sector=selected_sector, error="import_invalid"))
+
+    placeholders = ",".join(["%s"] * len(incoming_by_rg))
+    rows = fetch_all(
+        f"""
+        select id, registration_number, full_name, `rank`
+        from members
+        where registration_number in ({placeholders})
+        """,
+        tuple(incoming_by_rg.keys()),
+    )
+    existing_by_rg = {str(row.get("registration_number") or "").strip(): row for row in rows}
+
+    updated_count = 0
+    unchanged_count = 0
+    not_found_count = 0
+    statements: list[tuple[str, tuple]] = []
+
+    for rg, incoming in incoming_by_rg.items():
+        existing = existing_by_rg.get(rg)
+        if not existing:
+            not_found_count += 1
+            continue
+
+        old_name = existing.get("full_name") or ""
+        old_rank = existing.get("rank") or ""
+        new_name = incoming["full_name"]
+        new_rank = incoming["rank"]
+        if old_name == new_name and old_rank == new_rank:
+            unchanged_count += 1
+            continue
+
+        member_id = int(existing["id"])
+        statements.append(
+            (
+                """
+                update members
+                set full_name = %s,
+                    `rank` = %s,
+                    updated_at = now()
+                where id = %s
+                """,
+                (new_name, new_rank, member_id),
+            )
+        )
+        if old_name != new_name:
+            statements.append(
+                (
+                    """
+                    update financial_payments
+                    set source_name = %s,
+                        updated_at = now()
+                    where member_id = %s
+                    """,
+                    (new_name, member_id),
+                )
+            )
+        updated_count += 1
+
+    if statements:
+        execute_transaction(statements)
+
+    log_audit_event(
+        "membros",
+        "importacao_registros_nome_posto",
+        details={
+            "updated_count": updated_count,
+            "unchanged_count": unchanged_count,
+            "not_found_count": not_found_count,
+            "skipped_invalid": skipped_invalid,
+            "records_received": len(payload),
+            "records_valid": len(incoming_by_rg),
+        },
+    )
+
+    return redirect(
+        url_for(
+            "membros",
+            q=query,
+            sector=selected_sector,
+            saved="imported",
+            updated=updated_count,
+            unchanged=unchanged_count,
+            not_found=not_found_count,
+            skipped=skipped_invalid,
+        )
+    )
 
 
 @app.post("/membros/<int:member_id>")

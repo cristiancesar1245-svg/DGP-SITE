@@ -10,6 +10,13 @@
     <div class="alert">{{ request.args.get("merged", "0") }} cadastro(s) duplicado(s) foram unificados.</div>
 {% elif saved == "manual_merged" %}
     <div class="alert">Os dois cadastros foram acoplados. Pagamentos e setores agora estao no cadastro principal.</div>
+{% elif saved == "imported" %}
+    <div class="alert">
+        Importacao concluida: {{ request.args.get("updated", "0") }} atualizado(s),
+        {{ request.args.get("unchanged", "0") }} sem alteracao,
+        {{ request.args.get("not_found", "0") }} nao encontrado(s) no cadastro
+        e {{ request.args.get("skipped", "0") }} ignorado(s).
+    </div>
 {% elif saved %}
     <div class="alert">Dados do policial salvos no banco.</div>
 {% endif %}
@@ -17,6 +24,8 @@
 {% if error == "duplicate" %}<div class="alert error">Ja existe outro policial com essa matricula.</div>{% endif %}
 {% if error == "merge_missing" %}<div class="alert error">Selecione dois cadastros validos para acoplar.</div>{% endif %}
 {% if error == "merge_same" %}<div class="alert error">Escolha dois cadastros diferentes para acoplar.</div>{% endif %}
+{% if error == "import_missing" %}<div class="alert error">Cole o JSON do backup para importar.</div>{% endif %}
+{% if error == "import_invalid" %}<div class="alert error">JSON invalido. Use um array de registros com campos nome, rg e patente.</div>{% endif %}
 
 <section class="card compact-card">
     <div class="card-head">
@@ -50,6 +59,24 @@
             </div>
         </div>
         <button>Cadastrar membro</button>
+    </form>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head">
+        <div>
+            <h2>Atualizacao mensal por backup</h2>
+            <p>Atualiza apenas nome e posto (patente) com base na matricula (RG).</p>
+        </div>
+    </div>
+    <form class="member-create-form" method="post" action="{{ url_for('importar_registros_membros') }}">
+        <input type="hidden" name="q" value="{{ query }}">
+        <input type="hidden" name="sector_filter" value="{{ selected_sector }}">
+        <label class="full">
+            JSON do backup de registros
+            <textarea name="backup_json" rows="8" placeholder='[{"nome":"Santos","rg":"126718","patente":"Cabo"}]' required></textarea>
+        </label>
+        <button>Importar e atualizar nome/posto</button>
     </form>
 </section>
 
