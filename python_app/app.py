@@ -37,9 +37,14 @@ DEFAULT_HTTP_HEADERS = {
 HOURLY_IMPORT_PATTERN = re.compile(
     r"^@(.+?)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
 )
+HOURLY_IMPORT_WITH_ID_PATTERN = re.compile(
+    r"^@(.+?)\s+-\s+\d+\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
+)
 ADMIN_IMPORT_PATTERN = re.compile(
     r"^@(.+?)\s+-\s+(\d+)\s+fun\S*\s+\((.*?)\)\s+-\s*R\$\s*([\d.,]+)$"
 )
+ADMIN_BULLET_PATTERN = re.compile(r"^\*?\s*@(.+?)(?:\s+-\s+\d+)?\s+\(\*\*(\d+)\*\*\)\s*$")
+ADMIN_VALUE_PATTERN = re.compile(r"^valor\s*:\s*([\d.,]+)$", re.IGNORECASE)
 
 
 def load_env_file(path: str) -> None:
@@ -1482,6 +1487,9 @@ def parse_import_minutes(raw_value: str | None) -> int | None:
 def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
     entries: list[dict] = []
     section = "Horas"
+    pending_admin_name: str | None = None
+    pending_admin_function_count: int | None = None
+    pending_admin_functions_label: str | None = None
 
     for raw_line in raw_text.splitlines():
         line = raw_line.strip()
@@ -1494,7 +1502,63 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
             elif "hora" in line_lower:
                 section = "Horas"
             continue
+
+        if set(line) <= {"=", "-"}:
+            continue
+
+        if line.upper().startswith(
+            (
+                "PAGAMENTO ",
+                "TOTAL",
+                "VALOR TOTAL",
+                "DEPARTAMENTO ",
+                "CORREGEDORIA",
+                "COMANDO ",
+                "COORDENADOR ",
+                "DIRETOR ",
+                "CHEFE ",
+                "AUXILIAR ",
+                "ADMINISTRATIVO ",
+                "INSTRUTOR ",
+            )
+        ):
+            continue
+
+        value_match = ADMIN_VALUE_PATTERN.match(line)
+        if value_match and pending_admin_name:
+            entries.append(
+                {
+                    "category": "Administrativo",
+                    "name": pending_admin_name,
+                    "rank": rank_from_name(pending_admin_name),
+                    "amount": parse_import_money(value_match.group(1)),
+                    "department": None,
+                    "total_minutes": None,
+                    "extra_minutes": None,
+                    "function_count": pending_admin_function_count,
+                    "functions_label": pending_admin_functions_label,
+                }
+            )
+            pending_admin_name = None
+            pending_admin_function_count = None
+            pending_admin_functions_label = None
+            continue
+
+        if line.startswith("* @") or line.startswith("@"):
+            bullet_match = ADMIN_BULLET_PATTERN.match(line)
+            if bullet_match:
+                pending_admin_name = bullet_match.group(1).strip()
+                pending_admin_function_count = int(bullet_match.group(2))
+                pending_admin_functions_label = "INSTRUTOR"
+                section = "Administrativo"
+                continue
+
         if not line.startswith("@"):
+            if "Valor:" not in line:
+                pending_admin_name = line
+                pending_admin_function_count = None
+                pending_admin_functions_label = None
+                section = "Administrativo"
             continue
 
         if section == "Administrativo":
@@ -1517,7 +1581,7 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
             )
             continue
 
-        hourly_match = HOURLY_IMPORT_PATTERN.match(line)
+        hourly_match = HOURLY_IMPORT_WITH_ID_PATTERN.match(line) or HOURLY_IMPORT_PATTERN.match(line)
         if not hourly_match:
             continue
         name, total_hour, total_min, extra_hour, extra_min, amount = hourly_match.groups()
