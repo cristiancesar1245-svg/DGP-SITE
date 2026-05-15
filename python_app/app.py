@@ -2957,30 +2957,45 @@ def processar_financeiro_mes():
         return redirect(url_for("financeiro", error="import_reference_month"))
 
     source_text = (request.form.get("source_text") or "").strip()
-    source_file = request.files.get("source_file")
+    source_files = [f for f in request.files.getlist("source_file") if f and f.filename]
     input_mode = ""
     source_name = ""
     raw_content = ""
+    entries = []
 
     if source_text:
         input_mode = "texto"
         source_name = "texto-colado"
         raw_content = source_text
-    elif source_file and source_file.filename:
-        input_mode = "arquivo"
-        source_name = os.path.basename(source_file.filename)
-        file_bytes = source_file.read()
         try:
-            raw_content = file_bytes.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            raw_content = file_bytes.decode("latin-1")
+            entries = parse_financial_entries(raw_content)
+        except Exception:
+            return redirect(url_for("financeiro", error="import_parse"))
+    elif source_files:
+        parsed_file_names = []
+        raw_parts = []
+        input_mode = "arquivo"
+        for source_file in source_files:
+            current_name = os.path.basename(source_file.filename)
+            file_bytes = source_file.read()
+            try:
+                decoded_content = file_bytes.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                decoded_content = file_bytes.decode("latin-1")
+            try:
+                current_entries = parse_financial_entries(decoded_content)
+            except Exception:
+                return redirect(url_for("financeiro", error="import_parse"))
+            if current_entries:
+                entries.extend(current_entries)
+            parsed_file_names.append(current_name)
+            raw_parts.append(decoded_content)
+        source_name = ", ".join(parsed_file_names)
+        if len(parsed_file_names) > 1:
+            input_mode = "arquivos"
+        raw_content = "\n\n".join(raw_parts)
     else:
         return redirect(url_for("financeiro", error="import_missing_source"))
-
-    try:
-        entries = parse_financial_entries(raw_content)
-    except Exception:
-        return redirect(url_for("financeiro", error="import_parse"))
 
     if not entries:
         return redirect(url_for("financeiro", error="import_parse"))
