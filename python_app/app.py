@@ -1489,6 +1489,7 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
     pending_admin_name: str | None = None
     pending_admin_function_count: int | None = None
     pending_admin_functions_label: str | None = None
+    current_admin_functions_label: str | None = None
 
     for raw_line in raw_text.splitlines():
         line = raw_line.strip()
@@ -1521,6 +1522,20 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
                 "INSTRUTOR ",
             )
         ):
+            if line.upper().startswith(
+                (
+                    "CORREGEDORIA",
+                    "COMANDO ",
+                    "COORDENADOR ",
+                    "DIRETOR ",
+                    "CHEFE ",
+                    "AUXILIAR ",
+                    "ADMINISTRATIVO ",
+                    "INSTRUTOR ",
+                )
+            ):
+                current_admin_functions_label = line.strip()
+                section = "Administrativo"
             continue
 
         value_match = ADMIN_VALUE_PATTERN.match(line)
@@ -1535,7 +1550,7 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
                     "total_minutes": None,
                     "extra_minutes": None,
                     "function_count": pending_admin_function_count,
-                    "functions_label": pending_admin_functions_label,
+                    "functions_label": pending_admin_functions_label or current_admin_functions_label,
                 }
             )
             pending_admin_name = None
