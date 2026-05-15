@@ -1728,6 +1728,32 @@ def upsert_member_for_import(cursor, entry: dict) -> tuple[int, bool]:
     return int(cursor.lastrowid), True
 
 
+def infer_department_for_member(cursor, member_id: int) -> str | None:
+    cursor.execute(
+        """
+        select s.name
+        from member_sectors ms
+        inner join sectors s on s.id = ms.sector_id
+        where ms.member_id = %s
+        order by s.name asc
+        limit 1
+        """,
+        (member_id,),
+    )
+    sector_row = cursor.fetchone()
+    if sector_row and sector_row[0]:
+        return str(sector_row[0])
+
+    cursor.execute("select unit from members where id = %s", (member_id,))
+    member_row = cursor.fetchone()
+    if not member_row or not member_row[0]:
+        return None
+    unit = str(member_row[0]).strip()
+    if not unit or unit.upper() == NO_ADMIN_SECTOR:
+        return None
+    return unit
+
+
 def normalized_identity(value: str | None) -> str:
     text = unicodedata.normalize("NFKD", value or "")
     text = "".join(char for char in text if not unicodedata.combining(char))
@@ -3092,6 +3118,10 @@ def processar_financeiro_mes():
             if member_created:
                 created_members += 1
 
+            payment_department = entry.get("department")
+            if not payment_department:
+                payment_department = infer_department_for_member(cursor, member_id)
+
             source_key = source_key_for_entry(entry, reference_month)
             cursor.execute("select id from financial_payments where source_key = %s", (source_key,))
             existing_payment = cursor.fetchone()
@@ -3101,7 +3131,7 @@ def processar_financeiro_mes():
                 reference_month,
                 "beneficio" if entry["category"] == "Administrativo" else "gratificacao",
                 entry["category"],
-                entry.get("department"),
+                payment_department,
                 entry["name"],
                 entry.get("total_minutes"),
                 entry.get("extra_minutes"),
