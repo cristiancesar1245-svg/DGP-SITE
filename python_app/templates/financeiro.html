@@ -52,17 +52,13 @@
                     </td>
                     <td>{{ payment.rank }}</td>
                     <td class="sector-col">
-                        {% if payment.source_category == "Administrativo" %}
-                            <select form="payment-{{ payment.id }}" name="department">
-                                <option value="">Sem departamento</option>
-                                {% for sector in sectors %}
-                                    <option value="{{ sector.name }}" {% if payment.department == sector.name %}selected{% endif %}>{{ sector.name }}</option>
-                                {% endfor %}
-                            </select>
-                        {% else %}
-                            {{ payment.sector_names_label or "Sem setor" }}
-                            <input type="hidden" form="payment-{{ payment.id }}" name="department" value="">
-                        {% endif %}
+                        {{ payment.sector_names_label or "Sem setor" }}
+                        <input
+                            type="hidden"
+                            form="payment-{{ payment.id }}"
+                            name="department"
+                            value="{{ payment.sector_names_label or '' }}"
+                        >
                     </td>
                     <td class="select-col">
                         <select form="payment-{{ payment.id }}" name="source_category" required>

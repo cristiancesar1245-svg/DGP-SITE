@@ -7,7 +7,6 @@ import os
 import re
 import secrets
 import unicodedata
-import zlib
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -38,12 +37,12 @@ HOURLY_IMPORT_PATTERN = re.compile(
     r"^@(.+?)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
 )
 HOURLY_IMPORT_WITH_ID_PATTERN = re.compile(
-    r"^@(.+?)\s+-\s+\d+\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
+    r"^@(.+?)\s+-\s+(\d+)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
 )
 ADMIN_IMPORT_PATTERN = re.compile(
     r"^@(.+?)\s+-\s+(\d+)\s+fun\S*\s+\((.*?)\)\s+-\s*R\$\s*([\d.,]+)$"
 )
-ADMIN_BULLET_PATTERN = re.compile(r"^\*?\s*@(.+?)(?:\s+-\s+\d+)?\s+\(\*\*(\d+)\*\*\)\s*$")
+ADMIN_BULLET_PATTERN = re.compile(r"^\*?\s*@(.+?)(?:\s+-\s+(\d+))?\s+\(\*\*(\d+)\*\*\)\s*$")
 ADMIN_VALUE_PATTERN = re.compile(r"^valor\s*:\s*([\d.,]+)$", re.IGNORECASE)
 
 
@@ -1548,7 +1547,7 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
             bullet_match = ADMIN_BULLET_PATTERN.match(line)
             if bullet_match:
                 pending_admin_name = bullet_match.group(1).strip()
-                pending_admin_function_count = int(bullet_match.group(2))
+                pending_admin_function_count = int(bullet_match.group(3))
                 pending_admin_functions_label = "INSTRUTOR"
                 section = "Administrativo"
                 continue
@@ -1584,7 +1583,11 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
         hourly_match = HOURLY_IMPORT_WITH_ID_PATTERN.match(line) or HOURLY_IMPORT_PATTERN.match(line)
         if not hourly_match:
             continue
-        name, total_hour, total_min, extra_hour, extra_min, amount = hourly_match.groups()
+        if HOURLY_IMPORT_WITH_ID_PATTERN.match(line):
+            name, registration_number, total_hour, total_min, extra_hour, extra_min, amount = hourly_match.groups()
+        else:
+            name, total_hour, total_min, extra_hour, extra_min, amount = hourly_match.groups()
+            registration_number = None
         entries.append(
             {
                 "category": "Horas",
@@ -1592,6 +1595,7 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
                 "rank": rank_from_name(name),
                 "amount": parse_import_money(amount),
                 "department": None,
+                "registration_number": (registration_number or "").strip() or None,
                 "total_minutes": (int(total_hour) * 60) + int(total_min),
                 "extra_minutes": (int(extra_hour) * 60) + int(extra_min) if extra_hour and extra_min else 0,
                 "function_count": None,
@@ -1638,6 +1642,12 @@ def parse_financial_entries_from_csv(raw_text: str) -> list[dict]:
                     "rank": rank,
                     "amount": parse_import_money(amount_raw),
                     "department": normalized.get("departamento") or normalized.get("department") or None,
+                    "registration_number": (
+                        normalized.get("matricula")
+                        or normalized.get("registro")
+                        or normalized.get("registration_number")
+                        or None
+                    ),
                     "total_minutes": parse_import_minutes(
                         normalized.get("total_horas")
                         or normalized.get("total_minutes")
@@ -1691,41 +1701,64 @@ def source_key_for_entry(entry: dict, reference_month: date) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def registration_for_name(name: str) -> str:
-    return "IMP-" + f"{zlib.crc32((name or '').encode('utf-8')) & 0xffffffff:08X}"
+def normalized_person_name(value: str | None) -> str:
+    normalized = normalized_identity(value)
+    if not normalized:
+        return ""
+    tokens = normalized.split()
+    rank_tokens = {
+        "coronel",
+        "tenente",
+        "sargento",
+        "capitao",
+        "cabo",
+        "aspirante",
+        "major",
+        "soldado",
+        "classe",
+        "cl",
+        "sd",
+        "t",
+        "s",
+        "1",
+        "2",
+        "3",
+        "1a",
+    }
+    filtered = [token for token in tokens if token not in rank_tokens]
+    return " ".join(filtered).strip()
 
 
-def upsert_member_for_import(cursor, entry: dict) -> tuple[int, bool]:
-    registration_number = registration_for_name(entry.get("name") or "")
-    cursor.execute("select id from members where registration_number = %s", (registration_number,))
-    existing_by_registration = cursor.fetchone()
-    if existing_by_registration:
-        return int(existing_by_registration[0]), False
+def find_member_for_import(cursor, entry: dict) -> int | None:
+    registration_number = (entry.get("registration_number") or "").strip()
+    if registration_number:
+        cursor.execute("select id from members where registration_number = %s", (registration_number,))
+        existing_by_registration = cursor.fetchone()
+        if existing_by_registration:
+            return int(existing_by_registration[0])
 
     cursor.execute("select id, full_name, `rank` from members")
-    target_name = normalized_identity(entry.get("name"))
+    raw_name = re.sub(r"\s*-\s*\d+\s*$", "", str(entry.get("name") or "")).strip()
+    target_name = normalized_identity(raw_name)
+    target_person = normalized_person_name(raw_name)
     target_rank = entry.get("rank")
-    for member_id, full_name, rank in cursor.fetchall():
-        if normalized_identity(full_name) == target_name and ranks_are_compatible(rank, target_rank):
-            return int(member_id), False
+    fallback_candidates: list[tuple[int, str | None]] = []
 
-    default_unit = entry.get("department") or "DGP"
-    cursor.execute(
-        """
-        insert into members
-            (full_name, registration_number, `rank`, unit, role, status, created_at, updated_at)
-        values
-            (%s, %s, %s, %s, %s, 'ativo', now(), now())
-        """,
-        (
-            entry.get("name"),
-            registration_number,
-            entry.get("rank") or rank_from_name(entry.get("name") or ""),
-            default_unit,
-            "Importado do financeiro",
-        ),
-    )
-    return int(cursor.lastrowid), True
+    for member_id, full_name, rank in cursor.fetchall():
+        member_full = normalized_identity(full_name)
+        if member_full == target_name and ranks_are_compatible(rank, target_rank):
+            return int(member_id)
+        if normalized_person_name(full_name) == target_person and target_person:
+            fallback_candidates.append((int(member_id), rank))
+
+    if len(fallback_candidates) == 1:
+        return fallback_candidates[0][0]
+
+    rank_compatible = [member_id for member_id, rank in fallback_candidates if ranks_are_compatible(rank, target_rank)]
+    if len(rank_compatible) == 1:
+        return rank_compatible[0]
+
+    return None
 
 
 def infer_department_for_member(cursor, member_id: int) -> str | None:
@@ -3110,13 +3143,15 @@ def processar_financeiro_mes():
     created_members = 0
     created_payments = 0
     updated_payments = 0
+    unmatched_entries = 0
 
     with db() as connection:
         cursor = connection.cursor()
         for entry in entries:
-            member_id, member_created = upsert_member_for_import(cursor, entry)
-            if member_created:
-                created_members += 1
+            member_id = find_member_for_import(cursor, entry)
+            if not member_id:
+                unmatched_entries += 1
+                continue
 
             payment_department = entry.get("department")
             if not payment_department:
@@ -3225,6 +3260,9 @@ def processar_financeiro_mes():
         import_batch_id = cursor.lastrowid
         connection.commit()
 
+    if created_payments == 0 and updated_payments == 0:
+        return redirect(url_for("financeiro", error="import_parse"))
+
     log_audit_event(
         "financeiro",
         "financeiro_processado_mensalmente",
@@ -3237,6 +3275,7 @@ def processar_financeiro_mes():
             "source_name": source_name,
             "total_entries": len(entries),
             "created_members": created_members,
+            "unmatched_entries": unmatched_entries,
             "created_payments": created_payments,
             "updated_payments": updated_payments,
         },
