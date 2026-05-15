@@ -141,6 +141,7 @@
 {% if error == "import_missing_source" %}<div class="alert error">Envie um arquivo ou cole o texto para processar os lancamentos.</div>{% endif %}
 {% if error == "import_reference_month" %}<div class="alert error">Informe o mes de referencia no formato correto.</div>{% endif %}
 {% if error == "import_parse" %}<div class="alert error">Nao foi possivel ler os lancamentos. Revise o arquivo/texto e tente novamente.</div>{% endif %}
+{% if error == "import_month_already_processed" %}<div class="alert error">Este mes ja possui processamento registrado. Exclua o processamento do mes antes de importar novamente.</div>{% endif %}
 {% if error == "delete_month_empty" %}<div class="alert error">Nao ha lancamento no mes selecionado.</div>{% endif %}
 
 <section class="hero">

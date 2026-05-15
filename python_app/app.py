@@ -2956,6 +2956,23 @@ def processar_financeiro_mes():
     except ValueError:
         return redirect(url_for("financeiro", error="import_reference_month"))
 
+    existing_batch = fetch_one(
+        "select count(*) as total from financial_import_batches where reference_month = %s",
+        (reference_month,),
+    ) or {}
+    existing_month_payments = fetch_one(
+        "select count(*) as total from financial_payments where reference_month = %s",
+        (reference_month,),
+    ) or {}
+    if int(existing_batch.get("total") or 0) > 0 or int(existing_month_payments.get("total") or 0) > 0:
+        return redirect(
+            url_for(
+                "financeiro",
+                reference_month=reference_month_key(reference_month),
+                error="import_month_already_processed",
+            )
+        )
+
     source_text = (request.form.get("source_text") or "").strip()
     source_files = [f for f in request.files.getlist("source_file") if f and f.filename]
     input_mode = ""
