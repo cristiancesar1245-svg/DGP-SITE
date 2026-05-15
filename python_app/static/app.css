@@ -1296,10 +1296,9 @@ button, .button { background: var(--red); border: 0; border-radius: 8px; color: 
 .access-table td:nth-child(5) { min-width: 180px; }
 .access-table .access-subtext { color: var(--muted); font-size: .77rem; margin-top: 4px; }
 .detail-editor { min-width: 220px; }
-.mini-fields { align-items: start; display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(92px, 1fr)); }
-.mini-fields label { color: var(--muted); display: grid; font-size: .72rem; font-weight: 800; gap: 4px; text-transform: uppercase; }
-.mini-fields label:first-child input { min-width: 0; }
-.mini-fields label:last-child input { min-width: 0; }
+.mini-fields { align-items: center; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(110px, 1fr)); }
+.mini-fields label { align-items: center; color: var(--muted); display: flex; font-size: .72rem; font-weight: 800; gap: 8px; text-transform: uppercase; white-space: nowrap; }
+.mini-fields label input { flex: 1; min-width: 0; }
 .report-sector .card-head p { color: var(--muted); margin: 4px 0 0; }
 .report-sector .card-head strong { color: var(--red-dark); font-size: 1.25rem; }
 .report-totals { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
