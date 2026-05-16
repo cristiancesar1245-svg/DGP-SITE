@@ -45,6 +45,9 @@ ADMIN_IMPORT_PATTERN = re.compile(
 ADMIN_BULLET_PATTERN = re.compile(r"^\*?\s*@(.+?)(?:\s+-\s+(\d+))?\s+\(\*\*(\d+)\*\*\)\s*$")
 ADMIN_VALUE_PATTERN = re.compile(r"^valor\s*:\s*([\d.,]+)$", re.IGNORECASE)
 ADMIN_PENDING_MEMBER_PATTERN = re.compile(r"^\*?\s*@?(.+?)(?:\s*-\s*(\d+))?(?:\s+\(\*\*(\d+)\*\*\))?\s*$")
+IMPORT_MEMBER_NAME_ALIASES = {
+    "Cabo A Ramirez": "Cabo Adriel",
+}
 
 
 def load_env_file(path: str) -> None:
@@ -1498,6 +1501,17 @@ def split_admin_pending_member(raw_name: str) -> tuple[str, str | None, int | No
     )
 
 
+def canonical_import_member_name(raw_name: str | None) -> str:
+    base_name = (raw_name or "").strip()
+    if not base_name:
+        return ""
+    normalized_base = normalized_identity(base_name)
+    for source_name, target_name in IMPORT_MEMBER_NAME_ALIASES.items():
+        if normalized_identity(source_name) == normalized_base:
+            return target_name.strip()
+    return base_name
+
+
 def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
     entries: list[dict] = []
     section = "Horas"
@@ -1762,6 +1776,33 @@ def normalized_person_name(value: str | None) -> str:
     return " ".join(filtered).strip()
 
 
+def person_tokens(value: str | None) -> list[str]:
+    person = normalized_person_name(value)
+    return [token for token in person.split() if token]
+
+
+def names_probably_same_person(left_name: str | None, right_name: str | None) -> bool:
+    left_tokens = person_tokens(left_name)
+    right_tokens = person_tokens(right_name)
+    if not left_tokens or not right_tokens:
+        return False
+    if left_tokens == right_tokens:
+        return True
+
+    left_last = left_tokens[-1]
+    right_last = right_tokens[-1]
+    if left_last != right_last:
+        return False
+
+    left_initial = left_tokens[0][0] if left_tokens[0] else ""
+    right_initial = right_tokens[0][0] if right_tokens[0] else ""
+    if left_initial and right_initial and left_initial == right_initial:
+        return True
+
+    overlap = set(left_tokens) & set(right_tokens)
+    return len(overlap) >= 2
+
+
 def find_member_for_import(cursor, entry: dict) -> int | None:
     registration_number = (entry.get("registration_number") or "").strip()
     if registration_number:
@@ -1774,10 +1815,12 @@ def find_member_for_import(cursor, entry: dict) -> int | None:
     raw_name = re.sub(r"\s*-\s*\d+\s*$", "", str(entry.get("name") or "")).strip()
     raw_name = re.sub(r"\s*\(\*\*\d+\*\*\)\s*$", "", raw_name).strip()
     raw_name = re.sub(r"\s*\([^)]*\)\s*$", "", raw_name).strip()
+    raw_name = canonical_import_member_name(raw_name)
     target_name = normalized_identity(raw_name)
     target_person = normalized_person_name(raw_name)
     target_rank = entry.get("rank")
     fallback_candidates: list[tuple[int, str | None]] = []
+    fuzzy_candidates: list[tuple[int, str | None]] = []
 
     for member_id, full_name, rank in cursor.fetchall():
         member_full = normalized_identity(full_name)
@@ -1785,6 +1828,8 @@ def find_member_for_import(cursor, entry: dict) -> int | None:
             return int(member_id)
         if normalized_person_name(full_name) == target_person and target_person:
             fallback_candidates.append((int(member_id), rank))
+        elif target_person and names_probably_same_person(raw_name, full_name):
+            fuzzy_candidates.append((int(member_id), rank))
 
     if len(fallback_candidates) == 1:
         return fallback_candidates[0][0]
@@ -1792,6 +1837,13 @@ def find_member_for_import(cursor, entry: dict) -> int | None:
     rank_compatible = [member_id for member_id, rank in fallback_candidates if ranks_are_compatible(rank, target_rank)]
     if len(rank_compatible) == 1:
         return rank_compatible[0]
+
+    fuzzy_rank_compatible = [member_id for member_id, rank in fuzzy_candidates if ranks_are_compatible(rank, target_rank)]
+    if len(fuzzy_rank_compatible) == 1:
+        return fuzzy_rank_compatible[0]
+
+    if len(fuzzy_candidates) == 1:
+        return fuzzy_candidates[0][0]
 
     return None
 
