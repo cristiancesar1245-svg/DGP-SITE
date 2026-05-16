@@ -34,16 +34,17 @@ DEFAULT_HTTP_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
 }
 HOURLY_IMPORT_PATTERN = re.compile(
-    r"^@(.+?)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
+    r"^@(.+?)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)(?:\s+.*)?$"
 )
 HOURLY_IMPORT_WITH_ID_PATTERN = re.compile(
-    r"^@(.+?)\s+-\s+(\d+)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)$"
+    r"^@(.+?)\s+-\s+(\d+)\s+-\s+(\d+):(\d+)(?:\s+\(extra\s+(\d+):(\d+)\))?\s+-\s*R\$\s*([\d.,]+)(?:\s+.*)?$"
 )
 ADMIN_IMPORT_PATTERN = re.compile(
     r"^@(.+?)\s+-\s+(\d+)\s+fun\S*\s+\((.*?)\)\s+-\s*R\$\s*([\d.,]+)$"
 )
 ADMIN_BULLET_PATTERN = re.compile(r"^\*?\s*@(.+?)(?:\s+-\s+(\d+))?\s+\(\*\*(\d+)\*\*\)\s*$")
 ADMIN_VALUE_PATTERN = re.compile(r"^valor\s*:\s*([\d.,]+)$", re.IGNORECASE)
+ADMIN_PENDING_MEMBER_PATTERN = re.compile(r"^\*?\s*@?(.+?)(?:\s*-\s*(\d+))?(?:\s+\(\*\*(\d+)\*\*\))?\s*$")
 
 
 def load_env_file(path: str) -> None:
@@ -1483,6 +1484,20 @@ def parse_import_minutes(raw_value: str | None) -> int | None:
     return int(value)
 
 
+def split_admin_pending_member(raw_name: str) -> tuple[str, str | None, int | None]:
+    cleaned = (raw_name or "").strip()
+    match = ADMIN_PENDING_MEMBER_PATTERN.match(cleaned)
+    if not match:
+        return cleaned, None, None
+    name, registration_number, function_count = match.groups()
+    normalized_name = re.sub(r"\s*\([^)]*\)\s*$", "", (name or "").strip()).strip()
+    return (
+        normalized_name,
+        (registration_number or "").strip() or None,
+        int(function_count) if function_count else None,
+    )
+
+
 def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
     entries: list[dict] = []
     section = "Horas"
@@ -1540,16 +1555,18 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
 
         value_match = ADMIN_VALUE_PATTERN.match(line)
         if value_match and pending_admin_name:
+            pending_name, pending_registration, inline_function_count = split_admin_pending_member(pending_admin_name)
             entries.append(
                 {
                     "category": "Administrativo",
-                    "name": pending_admin_name,
-                    "rank": rank_from_name(pending_admin_name),
+                    "name": pending_name,
+                    "rank": rank_from_name(pending_name),
                     "amount": parse_import_money(value_match.group(1)),
                     "department": None,
+                    "registration_number": pending_registration,
                     "total_minutes": None,
                     "extra_minutes": None,
-                    "function_count": pending_admin_function_count,
+                    "function_count": pending_admin_function_count or inline_function_count,
                     "functions_label": pending_admin_functions_label or current_admin_functions_label,
                 }
             )
@@ -1587,6 +1604,7 @@ def parse_financial_entries_from_structured_text(raw_text: str) -> list[dict]:
                     "rank": rank_from_name(name),
                     "amount": parse_import_money(amount),
                     "department": None,
+                    "registration_number": None,
                     "total_minutes": None,
                     "extra_minutes": None,
                     "function_count": int(function_count),
@@ -1754,6 +1772,8 @@ def find_member_for_import(cursor, entry: dict) -> int | None:
 
     cursor.execute("select id, full_name, `rank` from members")
     raw_name = re.sub(r"\s*-\s*\d+\s*$", "", str(entry.get("name") or "")).strip()
+    raw_name = re.sub(r"\s*\(\*\*\d+\*\*\)\s*$", "", raw_name).strip()
+    raw_name = re.sub(r"\s*\([^)]*\)\s*$", "", raw_name).strip()
     target_name = normalized_identity(raw_name)
     target_person = normalized_person_name(raw_name)
     target_rank = entry.get("rank")
