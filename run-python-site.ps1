@@ -1,6 +1,9 @@
 Set-Location -LiteralPath $PSScriptRoot
 
 $port = 8080
+if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) {
+    $port = 8090
+}
 $env:DGP_PORT = "$port"
 $env:DGP_DEV_RELOAD = "1"
 $url = "http://127.0.0.1:$port"
