@@ -1143,6 +1143,8 @@ def inject_auth_context() -> dict:
 def prepare_audit_context():
     g.audit_actor_before = audit_actor_snapshot()
     g.audit_skip_request_log = request.endpoint in {"static", "live_revision"} or request.method == "OPTIONS"
+    if not g.audit_skip_request_log and not current_auth_user():
+        g.audit_skip_request_log = True
 
 
 @app.after_request
@@ -1181,14 +1183,12 @@ def enforce_public_base_url():
 @app.before_request
 def require_app_login():
     public_endpoints = {
-        "home",
         "login",
         "login_password",
         "discord_login",
         "discord_callback",
         "logout",
         "static",
-        "inscricao",
     }
     if request.endpoint in public_endpoints:
         return None
