@@ -191,6 +191,7 @@
     </form>
 </section>
 
+{% if current_user_is_developer %}
 <section class="card compact-card">
     <div class="card-head"><h2>Lancamento avulso</h2></div>
     <p class="card-intro">Use para incluir um pagamento individual sem reprocessar o mes inteiro.</p>
@@ -264,6 +265,7 @@
         </div>
     </form>
 </section>
+{% endif %}
 
 <section class="card compact-card">
     <div class="card-head"><h2>Historico de processamentos</h2></div>

@@ -3466,7 +3466,7 @@ def excluir_processamento_mes():
 
 @app.post("/financeiro/adicionar-avulso")
 def adicionar_pagamento_avulso():
-    denied = require_write_access()
+    denied = require_developer_access()
     if denied:
         return denied
 
