@@ -3124,6 +3124,14 @@ def financeiro():
         limit 30
         """
     )
+    members_for_manual = fetch_all(
+        """
+        select id, full_name, `rank`, unit
+        from members
+        where status = 'ativo'
+        order by full_name asc
+        """
+    )
 
     return render_template(
         "financeiro.html",
@@ -3149,6 +3157,7 @@ def financeiro():
         deleted=request.args.get("deleted"),
         error=request.args.get("error"),
         unmatched_count=int(request.args.get("unmatched_count") or 0),
+        members_for_manual=members_for_manual,
     )
 
 
@@ -3451,6 +3460,124 @@ def excluir_processamento_mes():
             "financeiro",
             reference_month=reference_month_key(reference_month),
             deleted="month",
+        )
+    )
+
+
+@app.post("/financeiro/adicionar-avulso")
+def adicionar_pagamento_avulso():
+    denied = require_write_access()
+    if denied:
+        return denied
+
+    ensure_financial_schema()
+
+    try:
+        reference_month = parse_reference_month_value(request.form.get("reference_month"))
+        member_id = form_int("member_id", required=True)
+        source_category = form_text("source_category", required=True)
+        gross_amount = form_money("gross_amount", required=True)
+        deductions = form_money("deductions") or Decimal("0")
+        status = form_text("status", required=True)
+        function_count = form_int("function_count")
+        total_minutes = form_minutes("total_minutes")
+        extra_minutes = form_minutes("extra_minutes")
+    except ValueError:
+        return redirect(url_for("financeiro", error="manual_add"))
+
+    if source_category not in {"Horas", "Administrativo"} or status not in {"pendente", "pago", "cancelado"}:
+        return redirect(url_for("financeiro", error="manual_add"))
+
+    member = fetch_one(
+        """
+        select id, full_name, `rank`, unit
+        from members
+        where id = %s
+        """,
+        (member_id,),
+    )
+    if not member:
+        return redirect(url_for("financeiro", error="manual_add"))
+
+    source_name = (form_text("source_name") or member.get("full_name") or "").strip()
+    department = (form_text("department") or member.get("unit") or "").strip() or None
+    functions_label = form_text("functions_label")
+    notes = form_text("notes")
+    if not notes:
+        notes = f"Lancamento avulso manual ({reference_month.strftime('%m/%Y')})."
+
+    entry = {
+        "category": source_category,
+        "name": source_name,
+        "amount": gross_amount,
+        "department": department if source_category == "Administrativo" else None,
+        "total_minutes": total_minutes if source_category == "Horas" else None,
+        "extra_minutes": extra_minutes if source_category == "Horas" else None,
+        "function_count": function_count if source_category == "Administrativo" else None,
+        "functions_label": functions_label if source_category == "Administrativo" else None,
+    }
+    source_key = source_key_for_entry(entry, reference_month)
+    existing = fetch_one("select id from financial_payments where source_key = %s", (source_key,))
+    if existing:
+        return redirect(
+            url_for(
+                "financeiro",
+                reference_month=reference_month_key(reference_month),
+                error="manual_duplicate",
+            )
+        )
+
+    paid_at_value = date.today() if status == "pago" else None
+    execute(
+        """
+        insert into financial_payments
+            (source_key, member_id, reference_month, payment_type, source_category,
+             department, source_name, total_minutes, extra_minutes, function_count, functions_label,
+             gross_amount, deductions, net_amount, status, paid_at, notes, created_at, updated_at)
+        values
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
+        """,
+        (
+            source_key,
+            member_id,
+            reference_month,
+            "beneficio" if source_category == "Administrativo" else "gratificacao",
+            source_category,
+            department if source_category == "Administrativo" else None,
+            source_name,
+            total_minutes if source_category == "Horas" else None,
+            extra_minutes if source_category == "Horas" else None,
+            function_count if source_category == "Administrativo" else None,
+            functions_label if source_category == "Administrativo" else None,
+            gross_amount,
+            deductions,
+            gross_amount - deductions,
+            status,
+            paid_at_value,
+            notes,
+        ),
+    )
+    log_audit_event(
+        "financeiro",
+        "pagamento_avulso_adicionado",
+        target_type="pagamento",
+        target_label=source_name,
+        details={
+            "member_id": member_id,
+            "reference_month": reference_month.isoformat(),
+            "source_category": source_category,
+            "gross_amount": str(gross_amount),
+            "deductions": str(deductions),
+            "status": status,
+            "functions_label": functions_label,
+        },
+    )
+    return redirect(
+        url_for(
+            "financeiro",
+            reference_month=reference_month_key(reference_month),
+            q=source_name,
+            saved="manual_added",
         )
     )
 

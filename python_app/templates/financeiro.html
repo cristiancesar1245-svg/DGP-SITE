@@ -131,6 +131,7 @@
 {% block content %}
 {% if saved and saved != "imported" %}<div class="alert">Pagamento salvo no banco e mantido no historico.</div>{% endif %}
 {% if saved == "imported" %}<div class="alert">Processamento mensal concluido. Os lancamentos foram importados e gravados no historico.</div>{% endif %}
+{% if saved == "manual_added" %}<div class="alert">Lancamento avulso adicionado com sucesso.</div>{% endif %}
 {% if deleted == "1" %}<div class="alert">Pagamento excluido do financeiro.</div>{% endif %}
 {% if deleted == "month" %}<div class="alert">Processamento mensal excluido com sucesso para a competencia selecionada.</div>{% endif %}
 {% if error == "payment" %}<div class="alert error">Preencha valores, detalhe, categoria e status antes de salvar.</div>{% endif %}
@@ -140,6 +141,8 @@
 {% if error == "import_unmatched" %}<div class="alert error">Importacao bloqueada: {{ unmatched_count }} lancamento(s) nao bateram com cadastro de membros. Corrija os nomes/postos e tente novamente.</div>{% endif %}
 {% if error == "import_month_already_processed" %}<div class="alert error">Este mes ja possui processamento registrado. Exclua o processamento do mes antes de importar novamente.</div>{% endif %}
 {% if error == "delete_month_empty" %}<div class="alert error">Nao ha lancamento no mes selecionado.</div>{% endif %}
+{% if error == "manual_add" %}<div class="alert error">Nao foi possivel adicionar o lancamento avulso. Revise os campos obrigatorios.</div>{% endif %}
+{% if error == "manual_duplicate" %}<div class="alert error">Este lancamento avulso ja existe para a competencia selecionada.</div>{% endif %}
 
 <section class="hero">
     <div>
@@ -184,6 +187,80 @@
             >
                 Excluir processamento do mes inteiro
             </button>
+        </div>
+    </form>
+</section>
+
+<section class="card compact-card">
+    <div class="card-head"><h2>Lancamento avulso</h2></div>
+    <p class="card-intro">Use para incluir um pagamento individual sem reprocessar o mes inteiro.</p>
+    <form class="form" method="post" action="{{ url_for('adicionar_pagamento_avulso') }}">
+        <label>
+            Mes de referencia
+            <input type="month" name="reference_month" value="{{ selected_reference_month }}" min="{{ reference_month_min }}" max="{{ reference_month_max }}" required>
+        </label>
+        <label>
+            Policial
+            <select name="member_id" required>
+                <option value="">Selecione</option>
+                {% for member in members_for_manual %}
+                    <option value="{{ member.id }}">{{ member.full_name }}{% if member.rank %} - {{ member.rank }}{% endif %}{% if member.unit %} ({{ member.unit }}){% endif %}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Categoria
+            <select name="source_category" required>
+                <option value="Administrativo">Administrativo</option>
+                <option value="Horas">Horas</option>
+            </select>
+        </label>
+        <label>
+            Origem (opcional)
+            <input name="source_name" placeholder="Se vazio, usa o nome do cadastro">
+        </label>
+        <label>
+            Departamento (opcional)
+            <input name="department" placeholder="Se vazio, usa o setor do membro">
+        </label>
+        <label>
+            Status
+            <select name="status" required>
+                <option value="pendente">pendente</option>
+                <option value="pago">pago</option>
+                <option value="cancelado">cancelado</option>
+            </select>
+        </label>
+        <label>
+            Bruto
+            <input name="gross_amount" placeholder="5000000" required>
+        </label>
+        <label>
+            Desconto
+            <input name="deductions" value="0">
+        </label>
+        <label>
+            Qtd. funcoes (admin)
+            <input name="function_count" placeholder="Opcional">
+        </label>
+        <label>
+            Funcoes (admin)
+            <input name="functions_label" placeholder="Ex: COMANDO DE BATALHAO">
+        </label>
+        <label>
+            Total minutos (horas)
+            <input name="total_minutes" placeholder="Opcional (ex: 08:30)">
+        </label>
+        <label>
+            Extra minutos (horas)
+            <input name="extra_minutes" placeholder="Opcional (ex: 01:15)">
+        </label>
+        <label class="full">
+            Observacoes
+            <input name="notes" placeholder="Opcional">
+        </label>
+        <div class="full processing-actions">
+            <button type="submit">Adicionar lancamento avulso</button>
         </div>
     </form>
 </section>
