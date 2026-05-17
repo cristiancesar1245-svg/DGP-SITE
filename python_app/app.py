@@ -1442,23 +1442,23 @@ def normalize_backup_rank(raw_rank: str | None) -> str:
 
 
 def rank_from_name(name: str) -> str:
-    lower = (name or "").lower()
+    normalized_name = normalized_identity(name)
     rank_rules = [
-        ("t.coronel", "T.Coronel"),
+        ("t coronel", "T.Coronel"),
         ("coronel", "Coronel"),
         ("capit", "Capitao"),
-        ("1.tenente", "1.Tenente"),
-        ("2.tenente", "2.Tenente"),
-        ("s.tenente", "S.Tenente"),
+        ("1 tenente", "1.Tenente"),
+        ("2 tenente", "2.Tenente"),
+        ("s tenente", "S.Tenente"),
         ("aspirante", "Aspirante"),
-        ("1.sargento", "1.Sargento"),
-        ("2.sargento", "2.Sargento"),
-        ("3.sargento", "3.Sargento"),
+        ("1 sargento", "1.Sargento"),
+        ("2 sargento", "2.Sargento"),
+        ("3 sargento", "3.Sargento"),
         ("cabo", "Cabo"),
         ("sd 1", "Sd 1a Cl"),
     ]
     for needle, rank_name in rank_rules:
-        if needle in lower:
+        if needle in normalized_name:
             return rank_name
     return "Outros"
 
@@ -3148,6 +3148,7 @@ def financeiro():
         saved=request.args.get("saved"),
         deleted=request.args.get("deleted"),
         error=request.args.get("error"),
+        unmatched_count=int(request.args.get("unmatched_count") or 0),
     )
 
 
@@ -3238,6 +3239,21 @@ def processar_financeiro_mes():
             member_id = find_member_for_import(cursor, entry)
             if not member_id:
                 unmatched_entries += 1
+                continue
+
+        if unmatched_entries > 0:
+            return redirect(
+                url_for(
+                    "financeiro",
+                    reference_month=reference_month_key(reference_month),
+                    error="import_unmatched",
+                    unmatched_count=unmatched_entries,
+                )
+            )
+
+        for entry in entries:
+            member_id = find_member_for_import(cursor, entry)
+            if not member_id:
                 continue
 
             payment_department = entry.get("department")
